@@ -32,10 +32,21 @@ function toWaypoint(lat: number, lng: number) {
   return { location: { latLng: { latitude: lat, longitude: lng } } };
 }
 
+export interface ComputeRouteOptions {
+  /**
+   * RFC 3339 timestamp (e.g. "2026-06-02T17:00:00Z") for the intended departure.
+   * Must be in the future — the Routes API rejects past timestamps. Pair with a
+   * `routingPreference` for traffic-aware results; seasonal road closures are
+   * respected either way.
+   */
+  departureTime?: string;
+}
+
 export async function computeRoute(
   origin: { lat: number; lng: number },
   destination: { lat: number; lng: number },
   viaPoints: { lat: number; lng: number }[] = [],
+  opts: ComputeRouteOptions = {},
 ): Promise<ComputedRoute | null> {
   const body: Record<string, unknown> = {
     origin: toWaypoint(origin.lat, origin.lng),
@@ -46,6 +57,13 @@ export async function computeRoute(
 
   if (viaPoints.length > 0) {
     body.intermediates = viaPoints.map((p) => ({ via: true, ...toWaypoint(p.lat, p.lng) }));
+  }
+
+  if (opts.departureTime) {
+    body.departureTime = opts.departureTime;
+    // Required by the Routes API when a future departureTime is supplied for
+    // driving mode; also gives us traffic-aware seasonal closure handling.
+    body.routingPreference = 'TRAFFIC_AWARE';
   }
 
   const res = await fetch(ENDPOINT, {
