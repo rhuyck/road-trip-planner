@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Day, RouteInfo, Stop } from '@/types/trip';
 import { getDayColor } from '@/utils/colors';
+import { formatDuration } from '@/utils/routesApi';
 
 interface Props {
   day: Day;
@@ -16,6 +17,10 @@ interface Props {
   onReorderStop: (fromIndex: number, toIndex: number) => void;
   onEditHotel: () => void;
 }
+
+const GAS_PRICE_CA = 5.50;
+const GAS_PRICE_DEFAULT = 3.50;
+const MPG = 25;
 
 export function DayCard({
   day, index, originCity, isSelected, route,
@@ -32,8 +37,18 @@ export function DayCard({
   }, 0);
 
   const hotelCost = parseFloat(day.hotel.cost.replace(/[^0-9.]/g, ''));
-
   const totalCost = totalStopCost + (isNaN(hotelCost) ? 0 : hotelCost);
+
+  const gasPrice = day.state === 'CA' ? GAS_PRICE_CA : GAS_PRICE_DEFAULT;
+  const gasCost = route ? (route.distanceMeters / 1609.34 / MPG) * gasPrice : 0;
+
+  // Map each located stop's id to its leg index so we can show between-stop drive times
+  const stopLegIndex = new Map<string, number>();
+  let li = 0;
+  for (const stop of day.stops) {
+    if (stop.location) stopLegIndex.set(stop.id, li++);
+  }
+  const hasLegs = !!(route?.legs && route.legs.length === li + 1 && li >= 2);
 
   return (
     <div
@@ -78,6 +93,11 @@ export function DayCard({
             <div className="flex gap-3 mt-0.5 text-xs text-gray-400">
               <span>🚗 {route.durationText}</span>
               <span>{route.distanceText}</span>
+              {gasCost > 0 && (
+                <span className="text-amber-500" title={`@ $${gasPrice.toFixed(2)}/gal · ${MPG} mpg`}>
+                  ⛽ ~${gasCost.toFixed(0)}
+                </span>
+              )}
             </div>
           )}
           {totalCost > 0 && (
@@ -98,63 +118,84 @@ export function DayCard({
           {day.stops.length === 0 && (
             <p className="text-xs text-gray-500 italic">No stops yet.</p>
           )}
-          {day.stops.map((stop, stopIdx) => (
-            <div key={stop.id} className="flex items-start gap-2 bg-gray-700/50 rounded-lg p-2">
-              <div className="flex flex-col flex-shrink-0 -my-0.5">
-                <button
-                  onClick={() => onReorderStop(stopIdx, stopIdx - 1)}
-                  disabled={stopIdx === 0}
-                  aria-label="Move stop up"
-                  className="text-gray-400 hover:text-white text-[10px] leading-none px-1 py-0.5 rounded hover:bg-gray-600 transition-colors disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-                >
-                  ▲
-                </button>
-                <button
-                  onClick={() => onReorderStop(stopIdx, stopIdx + 1)}
-                  disabled={stopIdx === day.stops.length - 1}
-                  aria-label="Move stop down"
-                  className="text-gray-400 hover:text-white text-[10px] leading-none px-1 py-0.5 rounded hover:bg-gray-600 transition-colors disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed"
-                >
-                  ▼
-                </button>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-sm font-medium text-white truncate">{stop.name}</span>
-                  {stop.url && (
-                    <a
-                      href={stop.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-400 hover:text-blue-300 text-xs"
-                      onClick={(e) => e.stopPropagation()}
+          {day.stops.map((stop, stopIdx) => {
+            const myLegIdx = stopLegIndex.get(stop.id);
+            const nextStop = day.stops[stopIdx + 1];
+            const nextLegIdx = nextStop ? stopLegIndex.get(nextStop.id) : undefined;
+            const showDriveConnector =
+              hasLegs &&
+              myLegIdx !== undefined &&
+              nextLegIdx !== undefined &&
+              nextLegIdx === myLegIdx + 1;
+
+            return (
+              <Fragment key={stop.id}>
+                <div className="flex items-start gap-2 bg-gray-700/50 rounded-lg p-2">
+                  <div className="flex flex-col flex-shrink-0 -my-0.5">
+                    <button
+                      onClick={() => onReorderStop(stopIdx, stopIdx - 1)}
+                      disabled={stopIdx === 0}
+                      aria-label="Move stop up"
+                      className="text-gray-400 hover:text-white text-[10px] leading-none px-1 py-0.5 rounded hover:bg-gray-600 transition-colors disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed"
                     >
-                      ↗
-                    </a>
-                  )}
+                      ▲
+                    </button>
+                    <button
+                      onClick={() => onReorderStop(stopIdx, stopIdx + 1)}
+                      disabled={stopIdx === day.stops.length - 1}
+                      aria-label="Move stop down"
+                      className="text-gray-400 hover:text-white text-[10px] leading-none px-1 py-0.5 rounded hover:bg-gray-600 transition-colors disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                    >
+                      ▼
+                    </button>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-sm font-medium text-white truncate">{stop.name}</span>
+                      {stop.url && (
+                        <a
+                          href={stop.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-400 hover:text-blue-300 text-xs"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          ↗
+                        </a>
+                      )}
+                    </div>
+                    <div className="flex gap-3 text-xs text-gray-400 mt-0.5">
+                      {stop.timeEstimate && <span>⏱ {stop.timeEstimate}</span>}
+                      {stop.cost && <span>💵 ${stop.cost}</span>}
+                    </div>
+                    {stop.notes && <p className="text-xs text-gray-500 mt-0.5 truncate">{stop.notes}</p>}
+                  </div>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => onEditStop(stop)}
+                      className="text-gray-400 hover:text-white text-xs px-1.5 py-1 rounded hover:bg-gray-600 transition-colors"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => onRemoveStop(stop.id)}
+                      className="text-gray-400 hover:text-red-400 text-xs px-1.5 py-1 rounded hover:bg-gray-600 transition-colors"
+                    >
+                      🗑
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-3 text-xs text-gray-400 mt-0.5">
-                  {stop.timeEstimate && <span>⏱ {stop.timeEstimate}</span>}
-                  {stop.cost && <span>💵 ${stop.cost}</span>}
-                </div>
-                {stop.notes && <p className="text-xs text-gray-500 mt-0.5 truncate">{stop.notes}</p>}
-              </div>
-              <div className="flex gap-1 flex-shrink-0">
-                <button
-                  onClick={() => onEditStop(stop)}
-                  className="text-gray-400 hover:text-white text-xs px-1.5 py-1 rounded hover:bg-gray-600 transition-colors"
-                >
-                  ✏️
-                </button>
-                <button
-                  onClick={() => onRemoveStop(stop.id)}
-                  className="text-gray-400 hover:text-red-400 text-xs px-1.5 py-1 rounded hover:bg-gray-600 transition-colors"
-                >
-                  🗑
-                </button>
-              </div>
-            </div>
-          ))}
+
+                {showDriveConnector && (
+                  <div className="flex items-center gap-2 px-1 text-xs text-gray-500">
+                    <span className="flex-1 h-px bg-gray-700" />
+                    <span>🚗 {formatDuration(route!.legs![myLegIdx + 1].durationSeconds)}</span>
+                    <span className="flex-1 h-px bg-gray-700" />
+                  </div>
+                )}
+              </Fragment>
+            );
+          })}
 
           <div className="flex gap-2 pt-1">
             <button
