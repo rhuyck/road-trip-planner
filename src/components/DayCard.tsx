@@ -24,6 +24,7 @@ export function DayCard({
   const [expanded, setExpanded] = useState(false);
   const color = getDayColor(index);
   const hasHotel = !!day.hotel.name;
+  const hotelBooked = hasHotel && day.hotel.booked;
 
   const totalStopCost = day.stops.reduce((sum, s) => {
     const n = parseFloat(s.cost.replace(/[^0-9.]/g, ''));
@@ -63,7 +64,14 @@ export function DayCard({
                 <>{day.city}, {day.state} <span className="text-gray-500 font-normal">(start)</span></>
               )}
             </span>
-            {hasHotel && <span className="text-xs" title={day.hotel.name}>🛏</span>}
+            {hasHotel && (
+              <span
+                className="text-xs"
+                title={`${day.hotel.name}${hotelBooked ? ' · Booked' : ' · Not booked'}`}
+              >
+                🛏{hotelBooked && <span className="text-emerald-400 ml-0.5">✓</span>}
+              </span>
+            )}
           </div>
           <div className="text-xs text-gray-400">{day.dayOfWeek} &middot; {day.date}</div>
           {route && (
@@ -163,7 +171,7 @@ export function DayCard({
                   : 'bg-gray-700 hover:bg-gray-600 text-gray-400 border-gray-600'
               }`}
             >
-              {hasHotel ? '🛏 Edit Hotel' : '🛏 Add Hotel'}
+              {hasHotel ? (hotelBooked ? '🛏 Edit Hotel ✓' : '🛏 Edit Hotel') : '🛏 Add Hotel'}
             </button>
           </div>
         </div>

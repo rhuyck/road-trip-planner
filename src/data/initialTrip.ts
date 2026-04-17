@@ -1,6 +1,6 @@
 import { Day } from '@/types/trip';
 
-const emptyHotel = () => ({ name: '', url: '', cost: '', notes: '' });
+const emptyHotel = () => ({ name: '', url: '', cost: '', notes: '', booked: false });
 
 export const INITIAL_DAYS: Day[] = [
   { id: 'd00', date: '5/28', dayOfWeek: 'Wednesday', city: 'Minneapolis',  state: 'MN', location: { lat: 44.9778,  lng: -93.2650  }, hotel: emptyHotel(), stops: [] },

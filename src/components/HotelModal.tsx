@@ -39,7 +39,8 @@ export function HotelModal({ dayLabel, hotel, city, state, checkIn, checkOut, on
     onClose();
   };
 
-  const field = (key: keyof Hotel, label: string, placeholder = '', opts?: { optional?: boolean; textarea?: boolean }) => (
+  type StringKey = { [K in keyof Hotel]: Hotel[K] extends string ? K : never }[keyof Hotel];
+  const field = (key: StringKey, label: string, placeholder = '', opts?: { optional?: boolean; textarea?: boolean }) => (
     <div>
       <label className="block text-sm font-medium text-gray-300 mb-1">
         {label}
@@ -112,6 +113,17 @@ export function HotelModal({ dayLabel, hotel, city, state, checkIn, checkOut, on
           </div>
 
           {field('notes', 'Notes', 'Confirmation #, amenities, etc.', { textarea: true, optional: true })}
+
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-emerald-500 focus:ring-emerald-400 focus:ring-offset-gray-800"
+              checked={form.booked}
+              onChange={(e) => setForm((f) => ({ ...f, booked: e.target.checked }))}
+            />
+            <span className="text-sm font-medium text-gray-200">Booked</span>
+            {form.booked && <span className="text-xs text-emerald-400">✓ confirmed</span>}
+          </label>
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors">

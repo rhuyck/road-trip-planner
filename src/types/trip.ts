@@ -8,6 +8,7 @@ export interface Hotel {
   url: string;
   cost: string;
   notes: string;
+  booked: boolean;
 }
 
 export interface Stop {

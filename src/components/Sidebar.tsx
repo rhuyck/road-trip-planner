@@ -5,12 +5,14 @@ import { Day, RouteInfo, Stop } from '@/types/trip';
 import { DayCard } from './DayCard';
 
 interface Props {
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
   onAddStop: (dayId: string) => void;
   onEditStop: (dayId: string, stop: Stop) => void;
   onEditHotel: (dayId: string) => void;
 }
 
-export function Sidebar({ onAddStop, onEditStop, onEditHotel }: Props) {
+export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, onEditHotel }: Props) {
   const days = useTripStore((s) => s.days);
   const selectedDayId = useTripStore((s) => s.selectedDayId);
   const routes = useTripStore((s) => s.routes);
@@ -39,11 +41,46 @@ export function Sidebar({ onAddStop, onEditStop, onEditHotel }: Props) {
     return { totalStops, totalMi: Math.round(totalMi), totalDays, remHours, costTotal };
   }, [days, routes]);
 
+  if (collapsed) {
+    return (
+      <div className="flex flex-col h-full bg-gray-900 border-r border-gray-700 w-10 flex-shrink-0">
+        <button
+          onClick={onToggleCollapsed}
+          aria-label="Expand sidebar"
+          title="Expand sidebar"
+          className="flex items-center justify-center h-10 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors border-b border-gray-700"
+        >
+          »
+        </button>
+        <div className="flex-1 flex items-center justify-center">
+          <span
+            className="text-xs text-gray-500 tracking-widest"
+            style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+          >
+            🗺  Road Trip 2025  ·  {stats.totalStops} stops
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-gray-900 border-r border-gray-700 w-96 flex-shrink-0">
       <div className="p-4 border-b border-gray-700">
-        <h1 className="text-xl font-bold text-white tracking-tight">🗺 Road Trip 2025</h1>
-        <p className="text-xs text-gray-400 mt-0.5">May 28 – June 15 &middot; 19 days</p>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-white tracking-tight">🗺 Road Trip 2025</h1>
+            <p className="text-xs text-gray-400 mt-0.5">May 28 – June 15 &middot; 19 days</p>
+          </div>
+          <button
+            onClick={onToggleCollapsed}
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+            className="flex-shrink-0 -mr-1 -mt-1 w-7 h-7 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors"
+          >
+            «
+          </button>
+        </div>
 
         <div className="grid grid-cols-3 gap-2 mt-3">
           <Stat label="Miles" value={stats.totalMi > 0 ? `~${stats.totalMi.toLocaleString()}` : '—'} />

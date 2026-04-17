@@ -21,7 +21,7 @@ const STOPS_TAB = 'Stops';
 
 const DAYS_HEADER = [
   'id', 'date', 'dayOfWeek', 'city', 'state', 'lat', 'lng',
-  'hotelName', 'hotelUrl', 'hotelCost', 'hotelNotes',
+  'hotelName', 'hotelUrl', 'hotelCost', 'hotelNotes', 'hotelBooked',
 ];
 
 const STOPS_HEADER = [
@@ -70,8 +70,17 @@ function asNumberOrNull(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function asBool(v: unknown): boolean {
+  if (v === true) return true;
+  if (typeof v === 'string') {
+    const s = v.trim().toLowerCase();
+    return s === 'true' || s === 'yes' || s === '1' || s === 'y';
+  }
+  return false;
+}
+
 function dayFromRow(row: string[]): Day | null {
-  const [id, date, dayOfWeek, city, state, lat, lng, hotelName, hotelUrl, hotelCost, hotelNotes] = row;
+  const [id, date, dayOfWeek, city, state, lat, lng, hotelName, hotelUrl, hotelCost, hotelNotes, hotelBooked] = row;
   if (!id) return null;
   const latN = asNumberOrNull(lat);
   const lngN = asNumberOrNull(lng);
@@ -81,6 +90,7 @@ function dayFromRow(row: string[]): Day | null {
     url: asString(hotelUrl),
     cost: asString(hotelCost),
     notes: asString(hotelNotes),
+    booked: asBool(hotelBooked),
   };
   return {
     id: asString(id),
@@ -99,6 +109,7 @@ function dayToRow(d: Day): (string | number)[] {
     d.id, d.date, d.dayOfWeek, d.city, d.state,
     d.location.lat, d.location.lng,
     d.hotel.name, d.hotel.url, d.hotel.cost, d.hotel.notes,
+    d.hotel.booked ? 'TRUE' : 'FALSE',
   ];
 }
 

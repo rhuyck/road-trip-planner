@@ -31,6 +31,7 @@ export default function Page() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [stopModal, setStopModal] = useState<StopModal | null>(null);
   const [hotelModal, setHotelModal] = useState<HotelModalState | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const days = useTripStore((s) => s.days);
   const selectedDayId = useTripStore((s) => s.selectedDayId);
@@ -82,6 +83,8 @@ export default function Page() {
     <APIProvider apiKey={API_KEY} libraries={['maps3d', 'geocoding', 'marker']}>
       <div className="flex h-full overflow-hidden">
         <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapsed={() => setSidebarCollapsed((v) => !v)}
           onAddStop={(dayId) => setStopModal({ dayId, editing: null })}
           onEditStop={(dayId, stop) => setStopModal({ dayId, editing: stop })}
           onEditHotel={(dayId) => setHotelModal({ dayId })}
