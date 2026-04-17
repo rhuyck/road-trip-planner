@@ -22,6 +22,21 @@ const GAS_PRICE_CA = 5.50;
 const GAS_PRICE_DEFAULT = 3.50;
 const MPG = 25;
 
+function parseTimeEstimateHours(str: string): number {
+  if (!str.trim()) return 0;
+  const h = str.match(/(\d+(?:\.\d+)?)\s*h/i);
+  const m = str.match(/(\d+)\s*m/i);
+  return (h ? parseFloat(h[1]) : 0) + (m ? parseInt(m[1], 10) / 60 : 0);
+}
+
+function formatHours(totalHours: number): string {
+  const h = Math.floor(totalHours);
+  const m = Math.round((totalHours - h) * 60);
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
 export function DayCard({
   day, index, originCity, isSelected, route,
   onSelect, onAddStop, onEditStop, onRemoveStop, onReorderStop, onEditHotel,
@@ -41,6 +56,11 @@ export function DayCard({
 
   const gasPrice = day.state === 'CA' ? GAS_PRICE_CA : GAS_PRICE_DEFAULT;
   const gasCost = route ? (route.distanceMeters / 1609.34 / MPG) * gasPrice : 0;
+
+  const stopCount = day.stops.length;
+  const driveHours = route ? route.durationSeconds / 3600 : 0;
+  const stopHours = day.stops.reduce((sum, s) => sum + parseTimeEstimateHours(s.timeEstimate), 0);
+  const accountedHours = driveHours + stopHours;
 
   // Map each located stop's id to its leg index so we can show between-stop drive times
   const stopLegIndex = new Map<string, number>();
@@ -102,6 +122,24 @@ export function DayCard({
           )}
           {totalCost > 0 && (
             <div className="text-xs text-emerald-400 mt-0.5">${totalCost.toFixed(2)} est.</div>
+          )}
+        </div>
+        <div className="flex flex-col items-center gap-1 flex-shrink-0">
+          {stopCount > 0 && (
+            <span
+              className="w-6 h-6 rounded-full bg-blue-600/30 text-blue-300 text-[10px] font-bold flex items-center justify-center"
+              title={`${stopCount} stop${stopCount !== 1 ? 's' : ''}`}
+            >
+              {stopCount}
+            </span>
+          )}
+          {accountedHours > 0 && (
+            <span
+              className="min-w-[1.5rem] h-6 px-1 rounded-full bg-purple-600/25 text-purple-300 text-[10px] font-semibold flex items-center justify-center whitespace-nowrap"
+              title={`${formatHours(driveHours)} driving + ${formatHours(stopHours)} at stops`}
+            >
+              {formatHours(accountedHours)}
+            </span>
           )}
         </div>
         <button
