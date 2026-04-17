@@ -83,6 +83,7 @@ export function useRoutes(days: Day[]) {
             durationText: formatDuration(result.durationSeconds),
             distanceMeters: result.distanceMeters,
             durationSeconds: result.durationSeconds,
+            legs: result.legs,
           });
         } catch {
           // Allow retry on transient failure

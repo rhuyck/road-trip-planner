@@ -33,10 +33,16 @@ export interface Day {
   stops: Stop[];
 }
 
+export interface RouteLeg {
+  distanceMeters: number;
+  durationSeconds: number;
+}
+
 export interface RouteInfo {
   path: Array<{ lat: number; lng: number }>;
   distanceText: string;
   durationText: string;
   distanceMeters: number;
   durationSeconds: number;
+  legs?: RouteLeg[];
 }
