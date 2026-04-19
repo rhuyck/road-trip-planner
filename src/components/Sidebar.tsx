@@ -1,5 +1,6 @@
 'use client';
-import { useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { Map, Sun, Moon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTripStore } from '@/store/tripStore';
 import { Day, RouteInfo, Stop } from '@/types/trip';
 import { DayCard } from './DayCard';
@@ -19,6 +20,22 @@ export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, o
   const setSelectedDay = useTripStore((s) => s.setSelectedDay);
   const removeStop = useTripStore((s) => s.removeStop);
   const reorderStop = useTripStore((s) => s.reorderStop);
+
+  const [isDark, setIsDark] = useState(true);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('theme');
+    const dark = stored !== 'light';
+    setIsDark(dark);
+    document.documentElement.classList.toggle('dark', dark);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    localStorage.setItem('theme', next ? 'dark' : 'light');
+  };
 
   const stats = useMemo(() => {
     const totalStops = days.reduce((sum, d) => sum + d.stops.length, 0);
@@ -53,18 +70,18 @@ export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, o
 
   if (collapsed) {
     return (
-      <div className="flex flex-col h-full bg-gray-900 border-r border-gray-700 w-10 flex-shrink-0">
+      <div className="flex flex-col h-full bg-stone-50 dark:bg-gray-900 border-r border-stone-200 dark:border-gray-700 w-10 flex-shrink-0">
         <button
           onClick={onToggleCollapsed}
           aria-label="Expand sidebar"
           title="Expand sidebar"
-          className="flex items-center justify-center h-10 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors border-b border-gray-700"
+          className="flex items-center justify-center h-10 text-stone-500 dark:text-gray-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-gray-800 transition-colors border-b border-stone-200 dark:border-gray-700"
         >
-          »
+          <ChevronRight size={16} />
         </button>
         <div className="flex-1 flex items-center justify-center">
           <span
-            className="text-xs text-gray-500 tracking-widest"
+            className="text-xs text-stone-400 dark:text-gray-500 tracking-widest"
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
             🗺  Road Trip 2025  ·  {stats.totalStops} stops
@@ -75,20 +92,30 @@ export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, o
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 border-r border-gray-700 w-96 flex-shrink-0">
-      <div className="p-4 border-b border-gray-700">
+    <div className="flex flex-col h-full bg-stone-50 dark:bg-gray-900 border-r border-stone-200 dark:border-gray-700 w-96 flex-shrink-0">
+      <div className="p-4 border-b border-stone-200 dark:border-gray-700">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-white tracking-tight">🗺 Road Trip 2025</h1>
-            <p className="text-xs text-gray-400 mt-0.5">May 28 – June 15 &middot; 19 days</p>
+            <h1 className="text-xl font-bold text-stone-900 dark:text-white tracking-tight flex items-center gap-1.5">
+              <Map size={18} /> Road Trip 2025
+            </h1>
+            <p className="text-xs text-stone-500 dark:text-gray-400 mt-0.5">May 28 – June 15 &middot; 19 days</p>
           </div>
+          <button
+            onClick={toggleTheme}
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={isDark ? 'Light mode' : 'Dark mode'}
+            className="flex-shrink-0 w-7 h-7 flex items-center justify-center text-stone-500 dark:text-gray-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-gray-800 rounded transition-colors"
+          >
+            {isDark ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
           <button
             onClick={onToggleCollapsed}
             aria-label="Collapse sidebar"
             title="Collapse sidebar"
-            className="flex-shrink-0 -mr-1 -mt-1 w-7 h-7 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors"
+            className="flex-shrink-0 -mr-1 -mt-1 w-7 h-7 flex items-center justify-center text-stone-500 dark:text-gray-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-gray-800 rounded transition-colors"
           >
-            «
+            <ChevronLeft size={16} />
           </button>
         </div>
 
@@ -107,6 +134,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, o
             day={day}
             index={i}
             originCity={i > 0 ? days[i - 1].city : null}
+            originLocation={i > 0 ? days[i - 1].location : null}
             isSelected={selectedDayId === day.id}
             route={routes[day.id]}
             onSelect={() => setSelectedDay(day.id === selectedDayId ? null : day.id)}
@@ -119,7 +147,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, o
         ))}
       </div>
 
-      <div className="p-3 border-t border-gray-700 text-xs text-gray-500 text-center">
+      <div className="p-3 border-t border-stone-200 dark:border-gray-700 text-xs text-stone-400 dark:text-gray-500 text-center">
         {stats.totalStops} stop{stats.totalStops !== 1 ? 's' : ''} planned &middot; {days.filter((d) => d.hotel.name).length} hotels added
       </div>
     </div>
@@ -128,10 +156,10 @@ export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, o
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-gray-800 rounded-lg p-2 text-center">
-      <div className="text-sm font-semibold text-white">{value}</div>
-      <div className="text-xs text-gray-400">{label}</div>
-      {sub && <div className="text-xs text-gray-600">{sub}</div>}
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 text-center">
+      <div className="text-sm font-semibold text-stone-900 dark:text-white">{value}</div>
+      <div className="text-xs text-stone-500 dark:text-gray-400">{label}</div>
+      {sub && <div className="text-xs text-stone-400 dark:text-gray-600">{sub}</div>}
     </div>
   );
 }

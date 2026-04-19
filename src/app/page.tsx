@@ -50,11 +50,11 @@ export default function Page() {
 
   if (loadError) {
     return (
-      <div className="flex h-full items-center justify-center bg-gray-900 p-6">
+      <div className="flex h-full items-center justify-center bg-stone-50 dark:bg-gray-900 p-6">
         <div className="max-w-lg text-center">
           <div className="text-rose-400 font-semibold mb-2">Could not load trip from Google Sheets</div>
-          <pre className="text-xs text-gray-400 whitespace-pre-wrap break-words bg-gray-800 rounded p-3">{loadError}</pre>
-          <p className="text-xs text-gray-500 mt-3">Check <code>SETUP.md</code> and your <code>.env.local</code>.</p>
+          <pre className="text-xs text-stone-500 dark:text-gray-400 whitespace-pre-wrap break-words bg-stone-100 dark:bg-gray-800 rounded p-3">{loadError}</pre>
+          <p className="text-xs text-stone-400 dark:text-gray-500 mt-3">Check <code>SETUP.md</code> and your <code>.env.local</code>.</p>
         </div>
       </div>
     );
@@ -62,8 +62,8 @@ export default function Page() {
 
   if (!loaded) {
     return (
-      <div className="flex h-full items-center justify-center bg-gray-900">
-        <div className="text-gray-400 text-sm animate-pulse">Loading trip from Google Sheets…</div>
+      <div className="flex h-full items-center justify-center bg-stone-50 dark:bg-gray-900">
+        <div className="text-stone-500 dark:text-gray-400 text-sm animate-pulse">Loading trip from Google Sheets…</div>
       </div>
     );
   }
