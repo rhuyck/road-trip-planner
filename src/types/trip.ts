@@ -18,8 +18,10 @@ export interface Stop {
   location: LatLng | null;
   notes: string;
   url: string;
-  timeEstimate: string;
+  timeEstimate: number;
   cost: string;
+  bookingRequired: boolean;
+  bookingDone: boolean;
 }
 
 export interface Day {

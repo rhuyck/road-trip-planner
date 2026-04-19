@@ -59,7 +59,7 @@ export function DayCard({
 
   const stopCount = day.stops.length;
   const driveHours = route ? route.durationSeconds / 3600 : 0;
-  const stopHours = day.stops.reduce((sum, s) => sum + parseTimeEstimateHours(s.timeEstimate), 0);
+  const stopHours = day.stops.reduce((sum, s) => sum + s.timeEstimate, 0);
   const accountedHours = driveHours + stopHours;
 
   // Map each located stop's id to its leg index so we can show between-stop drive times
