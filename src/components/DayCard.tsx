@@ -22,12 +22,6 @@ const GAS_PRICE_CA = 5.50;
 const GAS_PRICE_DEFAULT = 3.50;
 const MPG = 25;
 
-function parseTimeEstimateHours(str: string): number {
-  if (!str.trim()) return 0;
-  const h = str.match(/(\d+(?:\.\d+)?)\s*h/i);
-  const m = str.match(/(\d+)\s*m/i);
-  return (h ? parseFloat(h[1]) : 0) + (m ? parseInt(m[1], 10) / 60 : 0);
-}
 
 function formatHours(totalHours: number): string {
   const h = Math.floor(totalHours);
@@ -59,7 +53,7 @@ export function DayCard({
 
   const stopCount = day.stops.length;
   const driveHours = route ? route.durationSeconds / 3600 : 0;
-  const stopHours = day.stops.reduce((sum, s) => sum + parseTimeEstimateHours(s.timeEstimate), 0);
+  const stopHours = day.stops.reduce((sum, s) => sum + s.timeEstimate, 0);
   const accountedHours = driveHours + stopHours;
 
   // Map each located stop's id to its leg index so we can show between-stop drive times

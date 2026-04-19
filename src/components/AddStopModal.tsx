@@ -21,7 +21,8 @@ interface Props {
 }
 
 const EMPTY: Omit<Stop, 'id'> = {
-  name: '', address: '', location: null, notes: '', url: '', timeEstimate: '', cost: '',
+  name: '', address: '', location: null, notes: '', url: '', timeEstimate: 0, cost: '',
+  bookingRequired: false, bookingDone: false,
 };
 
 export function AddStopModal({
@@ -200,11 +201,28 @@ export function AddStopModal({
                   </span>
                 </div>
               )}
+              {form.timeEstimate > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-400">Time at stop</span>
+                  <span className="text-white font-medium whitespace-nowrap">{form.timeEstimate}h</span>
+                </div>
+              )}
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-4">
-            {field('timeEstimate', 'Time at Stop', 'e.g. 2h 30m')}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Time at Stop (hours)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.25"
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-400"
+                placeholder="Hours, e.g. 1.5"
+                value={form.timeEstimate || ''}
+                onChange={(e) => setForm((f) => ({ ...f, timeEstimate: parseFloat(e.target.value) || 0 }))}
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Cost</label>
               <div className="relative">
@@ -218,6 +236,27 @@ export function AddStopModal({
               </div>
             </div>
           </div>
+
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-emerald-500 focus:ring-emerald-400 focus:ring-offset-gray-800"
+              checked={form.bookingRequired}
+              onChange={(e) => setForm((f) => ({ ...f, bookingRequired: e.target.checked }))}
+            />
+            <span className="text-sm font-medium text-gray-200">Booking required</span>
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-500 bg-gray-700 text-emerald-500 focus:ring-emerald-400 focus:ring-offset-gray-800"
+              checked={form.bookingDone}
+              onChange={(e) => setForm((f) => ({ ...f, bookingDone: e.target.checked }))}
+            />
+            <span className="text-sm font-medium text-gray-200">Booking done</span>
+            {form.bookingDone && <span className="text-xs text-emerald-400">✓ confirmed</span>}
+          </label>
 
           {field('url', 'Website', 'https://…', { optional: true })}
           {field('notes', 'Notes', 'Any notes…', { textarea: true, optional: true })}

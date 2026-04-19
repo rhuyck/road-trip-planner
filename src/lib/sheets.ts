@@ -26,7 +26,7 @@ const DAYS_HEADER = [
 
 const STOPS_HEADER = [
   'id', 'dayId', 'orderIndex', 'name', 'address', 'lat', 'lng',
-  'notes', 'url', 'timeEstimate', 'cost',
+  'notes', 'url', 'timeEstimate', 'cost', 'bookingRequired', 'bookingDone',
 ];
 
 function getEnv(name: string): string {
@@ -116,7 +116,7 @@ function dayToRow(d: Day): (string | number)[] {
 interface StopRow { dayId: string; orderIndex: number; stop: Stop; }
 
 function stopFromRow(row: string[]): StopRow | null {
-  const [id, dayId, orderIndex, name, address, lat, lng, notes, url, timeEstimate, cost] = row;
+  const [id, dayId, orderIndex, name, address, lat, lng, notes, url, timeEstimate, cost, bookingRequired, bookingDone] = row;
   if (!id || !dayId) return null;
   const latN = asNumberOrNull(lat);
   const lngN = asNumberOrNull(lng);
@@ -127,8 +127,10 @@ function stopFromRow(row: string[]): StopRow | null {
     location: latN != null && lngN != null ? { lat: latN, lng: lngN } : null,
     notes: asString(notes),
     url: asString(url),
-    timeEstimate: asString(timeEstimate),
+    timeEstimate: parseFloat(asString(timeEstimate)) || 0,
     cost: asString(cost),
+    bookingRequired: asBool(bookingRequired),
+    bookingDone: asBool(bookingDone),
   };
   const idxN = asNumberOrNull(orderIndex);
   return { dayId: asString(dayId), orderIndex: idxN ?? 0, stop };
@@ -139,6 +141,8 @@ function stopToRow(dayId: string, orderIndex: number, s: Stop): (string | number
     s.id, dayId, orderIndex, s.name, s.address,
     s.location?.lat ?? '', s.location?.lng ?? '',
     s.notes, s.url, s.timeEstimate, s.cost,
+    s.bookingRequired ? 'TRUE' : 'FALSE',
+    s.bookingDone ? 'TRUE' : 'FALSE',
   ];
 }
 
@@ -150,7 +154,7 @@ export async function readTrip(): Promise<Day[]> {
 
   const resp = await sheets.spreadsheets.values.batchGet({
     spreadsheetId,
-    ranges: [`${DAYS_TAB}!A2:K`, `${STOPS_TAB}!A2:K`],
+    ranges: [`${DAYS_TAB}!A2:K`, `${STOPS_TAB}!A2:M`],
   });
 
   const [daysRange, stopsRange] = resp.data.valueRanges ?? [];
@@ -242,7 +246,7 @@ export async function ensureInitialized(initialDays: Day[]): Promise<void> {
     // Ensure Stops header row exists even if Days is already populated.
     const stopHeaderResp = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${STOPS_TAB}!A1:K1`,
+      range: `${STOPS_TAB}!A1:M1`,
     });
     if (!((stopHeaderResp.data.values?.[0]?.[0]) === 'id')) {
       await sheets.spreadsheets.values.update({
