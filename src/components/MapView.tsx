@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
+import { Tag, Globe, Map as MapIcon } from 'lucide-react';
 import { Map3D, MapMode, useMap3D, useMapsLibrary, Map as GoogleMap, Polyline, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
 import { Day, RouteInfo } from '@/types/trip';
 import { getDayColor } from '@/utils/colors';
@@ -246,7 +247,7 @@ function CtrlBtn({ onClick, active, title, children }: {
       className={`w-9 h-9 flex items-center justify-center rounded-lg text-sm transition-colors ${
         active
           ? 'bg-blue-600 text-white'
-          : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+          : 'text-stone-600 dark:text-gray-300 hover:bg-stone-100 dark:hover:bg-gray-700 hover:text-stone-900 dark:hover:text-white'
       }`}
     >
       {children}
@@ -379,7 +380,7 @@ export function MapView({ days, selectedDayId, routes }: MapViewProps) {
       )}
 
       {/* Floating controls */}
-      <div className="absolute top-3 right-3 z-10 bg-gray-900/85 backdrop-blur border border-gray-700 rounded-xl p-1.5 flex flex-col gap-0.5 shadow-xl">
+      <div className="absolute top-3 right-3 z-10 bg-white/90 dark:bg-gray-900/85 backdrop-blur border border-stone-200 dark:border-gray-700 rounded-xl p-1.5 flex flex-col gap-0.5 shadow-xl">
         {/* 2D/3D toggle — top of toolbar */}
         <CtrlBtn
           onClick={() => setViewMode(is3D ? '2d' : '3d')}
@@ -388,7 +389,7 @@ export function MapView({ days, selectedDayId, routes }: MapViewProps) {
         >
           {is3D ? '3D' : '2D'}
         </CtrlBtn>
-        <div className="h-px bg-gray-700 mx-1" />
+        <div className="h-px bg-stone-200 dark:bg-gray-700 mx-1" />
 
         {/* Labels toggle — only in 3D mode */}
         {is3D && (
@@ -397,13 +398,13 @@ export function MapView({ days, selectedDayId, routes }: MapViewProps) {
             active={labelsOn}
             title={labelsOn ? 'Hide labels' : 'Show labels & roads'}
           >
-            🏷
+            <Tag size={14} />
           </CtrlBtn>
         )}
 
-        <div className="h-px bg-gray-700 mx-1" />
+        <div className="h-px bg-stone-200 dark:bg-gray-700 mx-1" />
         <CtrlBtn onClick={() => setResetSeq((n) => n + 1)} title="Overview of full trip">
-          🌍
+          <Globe size={14} />
         </CtrlBtn>
       </div>
     </div>

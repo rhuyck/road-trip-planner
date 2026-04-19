@@ -1,5 +1,6 @@
 'use client';
 import { Fragment, useState } from 'react';
+import { BedDouble, Car, Fuel, Clock, Banknote, Pencil, Trash2, MapPin, Route, ExternalLink, ChevronUp, ChevronDown } from 'lucide-react';
 import { Day, RouteInfo, Stop } from '@/types/trip';
 import { getDayColor } from '@/utils/colors';
 import { formatDuration } from '@/utils/routesApi';
@@ -82,7 +83,7 @@ export function DayCard({
       className={`rounded-xl border transition-all duration-150 ${
         isSelected
           ? 'border-opacity-80 shadow-lg'
-          : 'border-gray-700 hover:border-gray-500'
+          : 'border-stone-200 dark:border-gray-700 hover:border-stone-400 dark:hover:border-gray-500'
       }`}
       style={isSelected ? { borderColor: color, boxShadow: `0 0 0 1px ${color}40` } : {}}
     >
@@ -95,15 +96,15 @@ export function DayCard({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2">
-            <span className="font-semibold text-white text-sm truncate">
+            <span className="font-semibold text-stone-900 dark:text-white text-sm truncate">
               {originCity ? (
                 <>
-                  <span className="text-gray-400 font-normal">{originCity}</span>
-                  <span className="text-gray-500 font-normal mx-1">→</span>
+                  <span className="text-stone-500 dark:text-gray-400 font-normal">{originCity}</span>
+                  <span className="text-stone-400 dark:text-gray-500 font-normal mx-1">→</span>
                   {day.city}, {day.state}
                 </>
               ) : (
-                <>{day.city}, {day.state} <span className="text-gray-500 font-normal">(start)</span></>
+                <>{day.city}, {day.state} <span className="text-stone-400 dark:text-gray-500 font-normal">(start)</span></>
               )}
             </span>
             {hasHotel && (
@@ -111,18 +112,18 @@ export function DayCard({
                 className="text-xs"
                 title={`${day.hotel.name}${hotelBooked ? ' · Booked' : ' · Not booked'}`}
               >
-                🛏{hotelBooked && <span className="text-emerald-400 ml-0.5">✓</span>}
+                <BedDouble size={12} />{hotelBooked && <span className="text-emerald-400 ml-0.5">✓</span>}
               </span>
             )}
           </div>
-          <div className="text-xs text-gray-400">{day.dayOfWeek} &middot; {day.date}</div>
+          <div className="text-xs text-stone-500 dark:text-gray-400">{day.dayOfWeek} &middot; {day.date}</div>
           {route && (
-            <div className="flex gap-3 mt-0.5 text-xs text-gray-400">
-              <span>🚗 {route.durationText}</span>
+            <div className="flex gap-3 mt-0.5 text-xs text-stone-500 dark:text-gray-400">
+              <span><Car size={12} className="inline-block" /> {route.durationText}</span>
               <span>{route.distanceText}</span>
               {gasCost > 0 && (
                 <span className="text-amber-500" title={`@ $${gasPrice.toFixed(2)}/gal · ${MPG} mpg`}>
-                  ⛽ ~${gasCost.toFixed(0)}
+                  <Fuel size={12} className="inline-block" /> ~${gasCost.toFixed(0)}
                 </span>
               )}
             </div>
@@ -156,22 +157,22 @@ export function DayCard({
             onClick={(e) => e.stopPropagation()}
             className="w-6 h-6 rounded-full bg-emerald-600/20 text-emerald-400 text-[10px] flex items-center justify-center hover:bg-emerald-600/40 transition-colors"
           >
-            🗺
+            <Route size={12} />
           </a>
         </div>
         <button
-          className="flex-shrink-0 text-gray-500 hover:text-gray-200 text-lg leading-none px-1"
+          className="flex-shrink-0 text-stone-400 dark:text-gray-500 hover:text-stone-900 dark:hover:text-gray-200 text-lg leading-none px-1"
           onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
           aria-label={expanded ? 'Collapse' : 'Expand'}
         >
-          {expanded ? '▲' : '▼'}
+          {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
       </div>
 
       {expanded && (
-        <div className="px-3 pb-3 space-y-2 border-t border-gray-700 pt-2">
+        <div className="px-3 pb-3 space-y-2 border-t border-stone-200 dark:border-gray-700 pt-2">
           {day.stops.length === 0 && (
-            <p className="text-xs text-gray-500 italic">No stops yet.</p>
+            <p className="text-xs text-stone-400 dark:text-gray-500 italic">No stops yet.</p>
           )}
           {day.stops.map((stop, stopIdx) => {
             const myLegIdx = stopLegIndex.get(stop.id);
@@ -186,34 +187,34 @@ export function DayCard({
             return (
               <Fragment key={stop.id}>
                 {hasLegs && myLegIdx === 0 && (
-                  <div className="flex items-center gap-2 px-1 text-xs text-gray-500">
-                    <span className="flex-1 h-px bg-gray-700" />
+                  <div className="flex items-center gap-2 px-1 text-xs text-stone-400 dark:text-gray-500">
+                    <span className="flex-1 h-px bg-stone-300 dark:bg-gray-700" />
                     <span>{originCity ? `From ${originCity}` : 'Start'}: {formatDuration(route!.legs![0].durationSeconds)}</span>
-                    <span className="flex-1 h-px bg-gray-700" />
+                    <span className="flex-1 h-px bg-stone-300 dark:bg-gray-700" />
                   </div>
                 )}
-                <div className="flex items-start gap-2 bg-gray-700/50 rounded-lg p-2">
+                <div className="flex items-start gap-2 bg-stone-100/70 dark:bg-gray-700/50 rounded-lg p-2">
                   <div className="flex flex-col flex-shrink-0 -my-0.5">
                     <button
                       onClick={() => onReorderStop(stopIdx, stopIdx - 1)}
                       disabled={stopIdx === 0}
                       aria-label="Move stop up"
-                      className="text-gray-400 hover:text-white text-[10px] leading-none px-1 py-0.5 rounded hover:bg-gray-600 transition-colors disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                      className="text-stone-500 dark:text-gray-400 hover:text-stone-900 dark:hover:text-white text-[10px] leading-none px-1 py-0.5 rounded hover:bg-stone-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed"
                     >
-                      ▲
+                      <ChevronUp size={10} />
                     </button>
                     <button
                       onClick={() => onReorderStop(stopIdx, stopIdx + 1)}
                       disabled={stopIdx === day.stops.length - 1}
                       aria-label="Move stop down"
-                      className="text-gray-400 hover:text-white text-[10px] leading-none px-1 py-0.5 rounded hover:bg-gray-600 transition-colors disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                      className="text-stone-500 dark:text-gray-400 hover:text-stone-900 dark:hover:text-white text-[10px] leading-none px-1 py-0.5 rounded hover:bg-stone-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-not-allowed"
                     >
-                      ▼
+                      <ChevronDown size={10} />
                     </button>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-sm font-medium text-white truncate">{stop.name}</span>
+                      <span className="text-sm font-medium text-stone-900 dark:text-white truncate">{stop.name}</span>
                       {stop.url && (
                         <a
                           href={stop.url}
@@ -222,15 +223,15 @@ export function DayCard({
                           className="text-blue-400 hover:text-blue-300 text-xs"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          ↗
+                          <ExternalLink size={11} />
                         </a>
                       )}
                     </div>
-                    <div className="flex gap-3 text-xs text-gray-400 mt-0.5">
-                      {stop.timeEstimate > 0 && <span>⏱ {formatHours(stop.timeEstimate)}</span>}
-                      {stop.cost && <span>💵 ${stop.cost}</span>}
+                    <div className="flex gap-3 text-xs text-stone-500 dark:text-gray-400 mt-0.5">
+                      {stop.timeEstimate > 0 && <span><Clock size={12} className="inline-block" /> {formatHours(stop.timeEstimate)}</span>}
+                      {stop.cost && <span><Banknote size={12} className="inline-block" /> ${stop.cost}</span>}
                     </div>
-                    {stop.notes && <p className="text-xs text-gray-500 mt-0.5 truncate">{stop.notes}</p>}
+                    {stop.notes && <p className="text-xs text-stone-400 dark:text-gray-500 mt-0.5 truncate">{stop.notes}</p>}
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     {(stop.location || stop.address) && (
@@ -244,38 +245,38 @@ export function DayCard({
                         rel="noreferrer"
                         title="View in Google Maps"
                         onClick={(e) => e.stopPropagation()}
-                        className="text-gray-400 hover:text-emerald-400 text-xs px-1.5 py-1 rounded hover:bg-gray-600 transition-colors"
+                        className="text-stone-500 dark:text-gray-400 hover:text-emerald-400 text-xs px-1.5 py-1 rounded hover:bg-stone-200 dark:hover:bg-gray-600 transition-colors"
                       >
-                        📍
+                        <MapPin size={12} />
                       </a>
                     )}
                     <button
                       onClick={() => onEditStop(stop)}
-                      className="text-gray-400 hover:text-white text-xs px-1.5 py-1 rounded hover:bg-gray-600 transition-colors"
+                      className="text-stone-500 dark:text-gray-400 hover:text-stone-900 dark:hover:text-white text-xs px-1.5 py-1 rounded hover:bg-stone-200 dark:hover:bg-gray-600 transition-colors"
                     >
-                      ✏️
+                      <Pencil size={12} />
                     </button>
                     <button
                       onClick={() => onRemoveStop(stop.id)}
-                      className="text-gray-400 hover:text-red-400 text-xs px-1.5 py-1 rounded hover:bg-gray-600 transition-colors"
+                      className="text-stone-500 dark:text-gray-400 hover:text-red-400 text-xs px-1.5 py-1 rounded hover:bg-stone-200 dark:hover:bg-gray-600 transition-colors"
                     >
-                      🗑
+                      <Trash2 size={12} />
                     </button>
                   </div>
                 </div>
 
                 {showDriveConnector && (
-                  <div className="flex items-center gap-2 px-1 text-xs text-gray-500">
-                    <span className="flex-1 h-px bg-gray-700" />
-                    <span>🚗 {formatDuration(route!.legs![myLegIdx + 1].durationSeconds)}</span>
-                    <span className="flex-1 h-px bg-gray-700" />
+                  <div className="flex items-center gap-2 px-1 text-xs text-stone-400 dark:text-gray-500">
+                    <span className="flex-1 h-px bg-stone-300 dark:bg-gray-700" />
+                    <span><Car size={12} className="inline-block" /> {formatDuration(route!.legs![myLegIdx + 1].durationSeconds)}</span>
+                    <span className="flex-1 h-px bg-stone-300 dark:bg-gray-700" />
                   </div>
                 )}
                 {hasLegs && myLegIdx !== undefined && myLegIdx === li - 1 && !showDriveConnector && (
-                  <div className="flex items-center gap-2 px-1 text-xs text-gray-500">
-                    <span className="flex-1 h-px bg-gray-700" />
+                  <div className="flex items-center gap-2 px-1 text-xs text-stone-400 dark:text-gray-500">
+                    <span className="flex-1 h-px bg-stone-300 dark:bg-gray-700" />
                     <span>To {day.city}: {formatDuration(route!.legs![myLegIdx + 1].durationSeconds)}</span>
-                    <span className="flex-1 h-px bg-gray-700" />
+                    <span className="flex-1 h-px bg-stone-300 dark:bg-gray-700" />
                   </div>
                 )}
               </Fragment>
@@ -294,10 +295,16 @@ export function DayCard({
               className={`flex-1 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
                 hasHotel
                   ? 'bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border-amber-600/30'
-                  : 'bg-gray-700 hover:bg-gray-600 text-gray-400 border-gray-600'
+                  : 'bg-stone-100 dark:bg-gray-700 hover:bg-stone-200 dark:hover:bg-gray-600 text-stone-500 dark:text-gray-400 border-stone-300 dark:border-gray-600'
               }`}
             >
-              {hasHotel ? (hotelBooked ? '🛏 Edit Hotel ✓' : '🛏 Edit Hotel') : '🛏 Add Hotel'}
+              {hasHotel ? (
+                hotelBooked
+                  ? <><BedDouble size={12} className="inline-block mr-1" />Edit Hotel ✓</>
+                  : <><BedDouble size={12} className="inline-block mr-1" />Edit Hotel</>
+              ) : (
+                <><BedDouble size={12} className="inline-block mr-1" />Add Hotel</>
+              )}
             </button>
           </div>
         </div>
