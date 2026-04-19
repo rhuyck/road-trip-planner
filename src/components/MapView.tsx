@@ -1,12 +1,14 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { Map3D, MapMode, useMap3D, useMapsLibrary } from '@vis.gl/react-google-maps';
+import { Map3D, MapMode, useMap3D, useMapsLibrary, Map as GoogleMap, Polyline, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
 import { Day, RouteInfo } from '@/types/trip';
 import { getDayColor } from '@/utils/colors';
 import { useRoutes } from '@/hooks/useRoutes';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyEl = any;
+
+type ViewMode = '3d' | '2d';
 
 interface MapViewProps {
   days: Day[];
@@ -203,6 +205,32 @@ function CameraController({ days, selectedDayId, requestReset }: {
   return null;
 }
 
+// ── 2D map pan controller ──────────────────────────────────────────────────────
+
+function Map2DPanController({ days, selectedDayId }: { days: Day[]; selectedDayId: string | null }) {
+  const map = useMap();
+  const prevSelectedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!map || !selectedDayId) return;
+    if (prevSelectedRef.current === selectedDayId) return;
+    prevSelectedRef.current = selectedDayId;
+
+    const idx = days.findIndex((d) => d.id === selectedDayId);
+    if (idx < 0) return;
+
+    const curr = days[idx];
+    const prev = idx > 0 ? days[idx - 1] : null;
+
+    const centerLat = prev ? (prev.location.lat + curr.location.lat) / 2 : curr.location.lat;
+    const centerLng = prev ? (prev.location.lng + curr.location.lng) / 2 : curr.location.lng;
+
+    map.panTo({ lat: centerLat, lng: centerLng });
+  }, [map, selectedDayId, days]);
+
+  return null;
+}
+
 // ── Map controls toolbar ───────────────────────────────────────────────────────
 
 function CtrlBtn({ onClick, active, title, children }: {
@@ -239,32 +267,140 @@ function MapInner({ days, selectedDayId, routes, requestReset }: MapViewProps & 
   );
 }
 
+// ── 2D map content (rendered inside <Map> context) ─────────────────────────────
+
+function Map2DContent({ days, selectedDayId, routes }: MapViewProps) {
+  return (
+    <>
+      {/* Route polylines */}
+      {Object.entries(routes).map(([dayId, routeInfo]) => {
+        const idx = days.findIndex((d) => d.id === dayId);
+        const isSelected = dayId === selectedDayId;
+        const color = getDayColor(idx);
+        return (
+          <Polyline
+            key={`route-${dayId}`}
+            path={routeInfo.path}
+            strokeColor={isSelected ? '#ffffff' : color}
+            strokeWeight={isSelected ? 7 : 4}
+          />
+        );
+      })}
+
+      {/* City markers */}
+      {days.map((day, i) => {
+        const color = getDayColor(i);
+        return (
+          <AdvancedMarker
+            key={`city-${day.id}`}
+            position={{ lat: day.location.lat, lng: day.location.lng }}
+            title={`Day ${i + 1}: ${day.city}, ${day.state} · ${day.dayOfWeek} ${day.date}`}
+          >
+            <div
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                backgroundColor: color,
+                border: '2px solid #fff',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 9,
+                fontWeight: 700,
+                color: '#fff',
+              }}
+            >
+              {i + 1}
+            </div>
+          </AdvancedMarker>
+        );
+      })}
+
+      {/* Stop markers */}
+      {days.flatMap((day) =>
+        day.stops
+          .filter((stop) => stop.location)
+          .map((stop) => (
+            <AdvancedMarker
+              key={`stop-${stop.id}`}
+              position={{ lat: stop.location!.lat, lng: stop.location!.lng }}
+              title={stop.name}
+            >
+              <div
+                style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: '50%',
+                  backgroundColor: '#3b82f6',
+                  border: '1.5px solid #1d4ed8',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
+                }}
+              />
+            </AdvancedMarker>
+          ))
+      )}
+
+      {/* Pan controller */}
+      <Map2DPanController days={days} selectedDayId={selectedDayId} />
+    </>
+  );
+}
+
 // ── Export ─────────────────────────────────────────────────────────────────────
 
 export function MapView({ days, selectedDayId, routes }: MapViewProps) {
   const [mapMode, setMapMode] = useState<MapMode>(MapMode.SATELLITE);
   const [resetSeq, setResetSeq] = useState(0);
+  const [viewMode, setViewMode] = useState<ViewMode>('3d');
 
   const labelsOn = mapMode === MapMode.HYBRID;
+  const is3D = viewMode === '3d';
 
   return (
     <div className="flex-1 h-full relative">
-      <Map3D
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-        mode={mapMode}
-      >
-        <MapInner days={days} selectedDayId={selectedDayId} routes={routes} requestReset={resetSeq} />
-      </Map3D>
+      {is3D ? (
+        <Map3D
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+          mode={mapMode}
+        >
+          <MapInner days={days} selectedDayId={selectedDayId} routes={routes} requestReset={resetSeq} />
+        </Map3D>
+      ) : (
+        <GoogleMap
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+          mapTypeId="roadmap"
+          defaultCenter={{ lat: 41.5, lng: -108.5 }}
+          defaultZoom={5}
+        >
+          <Map2DContent days={days} selectedDayId={selectedDayId} routes={routes} />
+        </GoogleMap>
+      )}
 
       {/* Floating controls */}
       <div className="absolute top-3 right-3 z-10 bg-gray-900/85 backdrop-blur border border-gray-700 rounded-xl p-1.5 flex flex-col gap-0.5 shadow-xl">
+        {/* 2D/3D toggle — top of toolbar */}
         <CtrlBtn
-          onClick={() => setMapMode(labelsOn ? MapMode.SATELLITE : MapMode.HYBRID)}
-          active={labelsOn}
-          title={labelsOn ? 'Hide labels' : 'Show labels & roads'}
+          onClick={() => setViewMode(is3D ? '2d' : '3d')}
+          active={!is3D}
+          title={is3D ? 'Switch to 2D map' : 'Switch to 3D map'}
         >
-          🏷
+          {is3D ? '3D' : '2D'}
         </CtrlBtn>
+        <div className="h-px bg-gray-700 mx-1" />
+
+        {/* Labels toggle — only in 3D mode */}
+        {is3D && (
+          <CtrlBtn
+            onClick={() => setMapMode(labelsOn ? MapMode.SATELLITE : MapMode.HYBRID)}
+            active={labelsOn}
+            title={labelsOn ? 'Hide labels' : 'Show labels & roads'}
+          >
+            🏷
+          </CtrlBtn>
+        )}
+
         <div className="h-px bg-gray-700 mx-1" />
         <CtrlBtn onClick={() => setResetSeq((n) => n + 1)} title="Overview of full trip">
           🌍
