@@ -8,6 +8,7 @@ interface Props {
   day: Day;
   index: number;
   originCity: string | null;
+  originLocation: { lat: number; lng: number } | null;
   isSelected: boolean;
   route?: RouteInfo;
   onSelect: () => void;
@@ -22,13 +23,6 @@ const GAS_PRICE_CA = 5.50;
 const GAS_PRICE_DEFAULT = 3.50;
 const MPG = 25;
 
-function parseTimeEstimateHours(str: string): number {
-  if (!str.trim()) return 0;
-  const h = str.match(/(\d+(?:\.\d+)?)\s*h/i);
-  const m = str.match(/(\d+)\s*m/i);
-  return (h ? parseFloat(h[1]) : 0) + (m ? parseInt(m[1], 10) / 60 : 0);
-}
-
 function formatHours(totalHours: number): string {
   const h = Math.floor(totalHours);
   const m = Math.round((totalHours - h) * 60);
@@ -37,8 +31,21 @@ function formatHours(totalHours: number): string {
   return `${h}h ${m}m`;
 }
 
+function buildDayMapsUrl(
+  originLocation: { lat: number; lng: number } | null,
+  day: Day,
+): string {
+  const dest = `${day.location.lat},${day.location.lng}`;
+  const locatedStops = day.stops.filter((s) => s.location);
+  const waypoints = locatedStops.map((s) => `${s.location!.lat},${s.location!.lng}`).join('|');
+  const params = new URLSearchParams({ api: '1', destination: dest, travelmode: 'driving' });
+  if (originLocation) params.set('origin', `${originLocation.lat},${originLocation.lng}`);
+  if (waypoints) params.set('waypoints', waypoints);
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
 export function DayCard({
-  day, index, originCity, isSelected, route,
+  day, index, originCity, originLocation, isSelected, route,
   onSelect, onAddStop, onEditStop, onRemoveStop, onReorderStop, onEditHotel,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
@@ -68,7 +75,7 @@ export function DayCard({
   for (const stop of day.stops) {
     if (stop.location) stopLegIndex.set(stop.id, li++);
   }
-  const hasLegs = !!(route?.legs && route.legs.length === li + 1 && li >= 2);
+  const hasLegs = !!(route?.legs && route.legs.length === li + 1 && li >= 1);
 
   return (
     <div
@@ -141,6 +148,16 @@ export function DayCard({
               {formatHours(accountedHours)}
             </span>
           )}
+          <a
+            href={buildDayMapsUrl(originLocation, day)}
+            target="_blank"
+            rel="noreferrer"
+            title="View day route in Google Maps"
+            onClick={(e) => e.stopPropagation()}
+            className="w-6 h-6 rounded-full bg-emerald-600/20 text-emerald-400 text-[10px] flex items-center justify-center hover:bg-emerald-600/40 transition-colors"
+          >
+            🗺
+          </a>
         </div>
         <button
           className="flex-shrink-0 text-gray-500 hover:text-gray-200 text-lg leading-none px-1"
@@ -168,6 +185,13 @@ export function DayCard({
 
             return (
               <Fragment key={stop.id}>
+                {hasLegs && myLegIdx === 0 && (
+                  <div className="flex items-center gap-2 px-1 text-xs text-gray-500">
+                    <span className="flex-1 h-px bg-gray-700" />
+                    <span>{originCity ? `From ${originCity}` : 'Start'}: {formatDuration(route!.legs![0].durationSeconds)}</span>
+                    <span className="flex-1 h-px bg-gray-700" />
+                  </div>
+                )}
                 <div className="flex items-start gap-2 bg-gray-700/50 rounded-lg p-2">
                   <div className="flex flex-col flex-shrink-0 -my-0.5">
                     <button
@@ -203,12 +227,28 @@ export function DayCard({
                       )}
                     </div>
                     <div className="flex gap-3 text-xs text-gray-400 mt-0.5">
-                      {stop.timeEstimate && <span>⏱ {stop.timeEstimate}</span>}
+                      {stop.timeEstimate > 0 && <span>⏱ {formatHours(stop.timeEstimate)}</span>}
                       {stop.cost && <span>💵 ${stop.cost}</span>}
                     </div>
                     {stop.notes && <p className="text-xs text-gray-500 mt-0.5 truncate">{stop.notes}</p>}
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
+                    {(stop.location || stop.address) && (
+                      <a
+                        href={
+                          stop.location
+                            ? `https://www.google.com/maps/search/?api=1&query=${stop.location.lat},${stop.location.lng}`
+                            : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(stop.address)}`
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                        title="View in Google Maps"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-gray-400 hover:text-emerald-400 text-xs px-1.5 py-1 rounded hover:bg-gray-600 transition-colors"
+                      >
+                        📍
+                      </a>
+                    )}
                     <button
                       onClick={() => onEditStop(stop)}
                       className="text-gray-400 hover:text-white text-xs px-1.5 py-1 rounded hover:bg-gray-600 transition-colors"
@@ -228,6 +268,13 @@ export function DayCard({
                   <div className="flex items-center gap-2 px-1 text-xs text-gray-500">
                     <span className="flex-1 h-px bg-gray-700" />
                     <span>🚗 {formatDuration(route!.legs![myLegIdx + 1].durationSeconds)}</span>
+                    <span className="flex-1 h-px bg-gray-700" />
+                  </div>
+                )}
+                {hasLegs && myLegIdx !== undefined && myLegIdx === li - 1 && !showDriveConnector && (
+                  <div className="flex items-center gap-2 px-1 text-xs text-gray-500">
+                    <span className="flex-1 h-px bg-gray-700" />
+                    <span>To {day.city}: {formatDuration(route!.legs![myLegIdx + 1].durationSeconds)}</span>
                     <span className="flex-1 h-px bg-gray-700" />
                   </div>
                 )}

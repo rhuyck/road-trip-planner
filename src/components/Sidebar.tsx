@@ -107,6 +107,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, o
             day={day}
             index={i}
             originCity={i > 0 ? days[i - 1].city : null}
+            originLocation={i > 0 ? days[i - 1].location : null}
             isSelected={selectedDayId === day.id}
             route={routes[day.id]}
             onSelect={() => setSelectedDay(day.id === selectedDayId ? null : day.id)}
