@@ -13,17 +13,19 @@ interface Props {
   onClose: () => void;
 }
 
-function buildHotelsUrl(city: string, state: string, checkIn: string, checkOut: string): string {
-  const destination = `${city}, ${state}`;
+function buildChoiceHotelsUrl(city: string, state: string, checkIn: string, checkOut: string): string {
   const params = new URLSearchParams({
-    destination,
-    startDate: checkIn,
-    endDate: checkOut,
+    destinationName: `${city},+${state}`,
+    checkInDate: checkIn,
+    checkOutDate: checkOut,
     adults: '2',
-    rooms: '1',
-    sort: 'PRICE_LOW_TO_HIGH',
+    noOfRooms: '1',
   });
-  return `https://www.hotels.com/Hotel-Search?${params.toString()}`;
+  return `https://www.choicehotels.com/search?${params.toString()}`;
+}
+
+function buildGoogleMapsHotelsUrl(city: string, state: string): string {
+  return `https://www.google.com/maps/search/Hotels+in+${encodeURIComponent(city + ',+' + state)}/`;
 }
 
 export function HotelModal({ dayLabel, hotel, city, state, checkIn, checkOut, onSave, onClose }: Props) {
@@ -82,16 +84,29 @@ export function HotelModal({ dayLabel, hotel, city, state, checkIn, checkOut, on
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <a
-            href={buildHotelsUrl(city, state, checkIn, checkOut)}
+            href={buildChoiceHotelsUrl(city, state, checkIn, checkOut)}
             target="_blank"
             rel="noreferrer"
             className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-rose-600/15 hover:bg-rose-600/25 border border-rose-600/40 text-rose-200 text-sm transition-colors"
           >
             <span className="flex items-center gap-2">
               <span>🔎</span>
-              <span>Search hotels.com · 2 adults, 1 room</span>
+              <span>Search choicehotels.com · 2 adults, 1 room</span>
             </span>
             <span className="text-xs text-rose-300/80">{checkIn} → {checkOut} ↗</span>
+          </a>
+
+          <a
+            href={buildGoogleMapsHotelsUrl(city, state)}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-blue-600/15 hover:bg-blue-600/25 border border-blue-600/40 text-blue-200 text-sm transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <span>📍</span>
+              <span>Hotels in {city} · map view</span>
+            </span>
+            <span className="text-xs text-blue-300/80">{checkIn} ↗</span>
           </a>
 
           {field('name', 'Hotel Name', 'e.g. Motel 6 Kansas City')}
