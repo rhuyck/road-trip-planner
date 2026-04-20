@@ -14,15 +14,16 @@ interface Props {
   onClose: () => void;
 }
 
-function buildChoiceHotelsUrl(city: string, state: string, checkIn: string, checkOut: string): string {
+function buildHotelsUrl(city: string, state: string, checkIn: string, checkOut: string): string {
   const params = new URLSearchParams({
-    destinationName: `${city},+${state}`,
-    checkInDate: checkIn,
-    checkOutDate: checkOut,
+    destination: `${city}, ${state}`,
+    startDate: checkIn,
+    endDate: checkOut,
     adults: '2',
-    noOfRooms: '1',
+    rooms: '1',
+    sort: 'PRICE_LOW_TO_HIGH',
   });
-  return `https://www.choicehotels.com/search?${params.toString()}`;
+  return `https://www.hotels.com/Hotel-Search?${params.toString()}`;
 }
 
 function buildGoogleMapsHotelsUrl(city: string, state: string): string {
@@ -85,14 +86,14 @@ export function HotelModal({ dayLabel, hotel, city, state, checkIn, checkOut, on
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <a
-            href={buildChoiceHotelsUrl(city, state, checkIn, checkOut)}
+            href={buildHotelsUrl(city, state, checkIn, checkOut)}
             target="_blank"
             rel="noreferrer"
             className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-rose-600/15 hover:bg-rose-600/25 border border-rose-600/40 text-rose-200 text-sm transition-colors"
           >
             <span className="flex items-center gap-2">
               <Search size={14} />
-              <span>Search choicehotels.com · 2 adults, 1 room</span>
+              <span>Search hotels.com · 2 adults, 1 room</span>
             </span>
             <span className="text-xs text-rose-300/80">{checkIn} → {checkOut} ↗</span>
           </a>

@@ -135,7 +135,7 @@ export function DayCard({
         <div className="flex flex-col items-center gap-1 flex-shrink-0">
           {stopCount > 0 && (
             <span
-              className="w-6 h-6 rounded-full bg-blue-600/30 text-blue-300 text-[10px] font-bold flex items-center justify-center"
+              className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-600/30 text-blue-700 dark:text-blue-300 text-[10px] font-bold flex items-center justify-center"
               title={`${stopCount} stop${stopCount !== 1 ? 's' : ''}`}
             >
               {stopCount}
@@ -143,7 +143,7 @@ export function DayCard({
           )}
           {accountedHours > 0 && (
             <span
-              className="min-w-[1.5rem] h-6 px-1 rounded-full bg-purple-600/25 text-purple-300 text-[10px] font-semibold flex items-center justify-center whitespace-nowrap"
+              className="min-w-[1.5rem] h-6 px-1 rounded-full bg-purple-100 dark:bg-purple-600/25 text-purple-700 dark:text-purple-300 text-[10px] font-semibold flex items-center justify-center whitespace-nowrap"
               title={`${formatHours(driveHours)} driving + ${formatHours(stopHours)} at stops`}
             >
               {formatHours(accountedHours)}
@@ -173,6 +173,9 @@ export function DayCard({
         <div className="px-3 pb-3 space-y-2 border-t border-stone-200 dark:border-gray-700 pt-2">
           {day.stops.length === 0 && (
             <p className="text-xs text-stone-400 dark:text-gray-500 italic">No stops yet.</p>
+          )}
+          {day.stops.length > 0 && !hasLegs && (
+            <p className="text-xs text-stone-400 dark:text-gray-500 italic">Set an address and click Locate on each stop to see drive times between stops.</p>
           )}
           {day.stops.map((stop, stopIdx) => {
             const myLegIdx = stopLegIndex.get(stop.id);

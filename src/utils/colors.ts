@@ -1,9 +1,4 @@
-const PALETTE = [
-  '#FF4757', '#FF6348', '#FFA502', '#ECCC68', '#F9CA24',
-  '#6AB04C', '#2ED573', '#1E90FF', '#70A1FF', '#5352ED',
-  '#A29BFE', '#FD79A8', '#E84393', '#00CEC9', '#00B894',
-  '#FDCB6E', '#E17055', '#6C5CE7',
-];
+const PALETTE = ['#3b82f6', '#f97316', '#ec4899'];
 
 export function getDayColor(index: number): string {
   return PALETTE[index % PALETTE.length];
