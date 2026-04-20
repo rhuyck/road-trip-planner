@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { Geist } from 'next/font/google';
+import { Lora } from 'next/font/google';
 import './globals.css';
 
-const geist = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
+const lora = Lora({ variable: '--font-serif', subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Road Trip Planner 2025',
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geist.variable} h-full dark`}>
+    <html lang="en" className={`${lora.variable} h-full dark`}>
       <body className="h-full flex flex-col">{children}</body>
     </html>
   );

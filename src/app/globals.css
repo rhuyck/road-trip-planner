@@ -2,7 +2,7 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #fafaf9;
+  --background: #fef6e4;
   --foreground: #1c1917;
 }
 
@@ -14,7 +14,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-serif);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -27,7 +27,7 @@ body {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans, Arial, Helvetica, sans-serif);
+  font-family: var(--font-serif, Georgia, serif);
 }
 
 gmp-map-3d {

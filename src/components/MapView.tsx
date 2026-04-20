@@ -258,7 +258,6 @@ function CtrlBtn({ onClick, active, title, children }: {
 // ── Inner (needs Map3D context) ────────────────────────────────────────────────
 
 function MapInner({ days, selectedDayId, routes, requestReset }: MapViewProps & { requestReset: number }) {
-  useRoutes(days);
   return (
     <>
       <RoutePolylines days={days} routes={routes} selectedDayId={selectedDayId} />
@@ -352,6 +351,7 @@ function Map2DContent({ days, selectedDayId, routes }: MapViewProps) {
 // ── Export ─────────────────────────────────────────────────────────────────────
 
 export function MapView({ days, selectedDayId, routes }: MapViewProps) {
+  useRoutes(days);
   const [mapMode, setMapMode] = useState<MapMode>(MapMode.SATELLITE);
   const [resetSeq, setResetSeq] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('3d');
@@ -374,6 +374,7 @@ export function MapView({ days, selectedDayId, routes }: MapViewProps) {
           mapTypeId="roadmap"
           defaultCenter={{ lat: 41.5, lng: -108.5 }}
           defaultZoom={5}
+          mapId="DEMO_MAP_ID"
         >
           <Map2DContent days={days} selectedDayId={selectedDayId} routes={routes} />
         </GoogleMap>
