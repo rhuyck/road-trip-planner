@@ -89,7 +89,7 @@ export function PinGate({ children }: Props) {
           <div className="w-12 h-12 rounded-full bg-amber-500/20 flex items-center justify-center">
             <Lock size={22} className="text-amber-400" />
           </div>
-          <h1 className="text-xl font-bold text-stone-900 dark:text-white tracking-tight">Road Trip 2025</h1>
+          <h1 className="text-xl font-bold text-stone-900 dark:text-white tracking-tight">Road Trip 2026</h1>
           <p className="text-sm text-stone-500 dark:text-gray-400 text-center">Enter your 6-digit PIN to continue.</p>
         </div>
 

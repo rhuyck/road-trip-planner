@@ -5,7 +5,7 @@ import './globals.css';
 const lora = Lora({ variable: '--font-serif', subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Road Trip Planner 2025',
+  title: 'Road Trip Planner 2026',
   description: 'Interactive road trip planning with Google Maps 3D',
 };
 

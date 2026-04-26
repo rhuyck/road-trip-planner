@@ -6,7 +6,7 @@ import type { Day, Hotel, Stop } from '@/types/trip';
  *
  * "Days" tab (header row expected):
  *   A id | B date | C dayOfWeek | D city | E state | F lat | G lng
- *   H hotelName | I hotelAddress | J hotelUrl | K hotelCost | L hotelNotes | M hotelBooked
+ *   H hotelName | I hotelUrl | J hotelCost | K hotelNotes | L hotelBooked | M hotelAddress
  *
  * "Stops" tab (header row expected):
  *   A id | B dayId | C orderIndex | D name | E address | F lat | G lng
@@ -21,7 +21,7 @@ const STOPS_TAB = 'Stops';
 
 const DAYS_HEADER = [
   'id', 'date', 'dayOfWeek', 'city', 'state', 'lat', 'lng',
-  'hotelName', 'hotelAddress', 'hotelUrl', 'hotelCost', 'hotelNotes', 'hotelBooked',
+  'hotelName', 'hotelUrl', 'hotelCost', 'hotelNotes', 'hotelBooked', 'hotelAddress',
 ];
 
 const STOPS_HEADER = [
@@ -80,7 +80,7 @@ function asBool(v: unknown): boolean {
 }
 
 function dayFromRow(row: string[]): Day | null {
-  const [id, date, dayOfWeek, city, state, lat, lng, hotelName, hotelAddress, hotelUrl, hotelCost, hotelNotes, hotelBooked] = row;
+  const [id, date, dayOfWeek, city, state, lat, lng, hotelName, hotelUrl, hotelCost, hotelNotes, hotelBooked, hotelAddress] = row;
   if (!id) return null;
   const latN = asNumberOrNull(lat);
   const lngN = asNumberOrNull(lng);
@@ -109,8 +109,8 @@ function dayToRow(d: Day): (string | number)[] {
   return [
     d.id, d.date, d.dayOfWeek, d.city, d.state,
     d.location.lat, d.location.lng,
-    d.hotel.name, d.hotel.address, d.hotel.url, d.hotel.cost, d.hotel.notes,
-    d.hotel.booked ? 'TRUE' : 'FALSE',
+    d.hotel.name, d.hotel.url, d.hotel.cost, d.hotel.notes,
+    d.hotel.booked ? 'TRUE' : 'FALSE', d.hotel.address,
   ];
 }
 

@@ -85,7 +85,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, o
             className="text-xs text-stone-400 dark:text-gray-500 tracking-widest"
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
-            🗺  Road Trip 2025  ·  {stats.totalStops} stops
+            🗺  Road Trip 2026  ·  {stats.totalStops} stops
           </span>
         </div>
       </div>
@@ -98,7 +98,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, o
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <h1 className="text-xl font-bold text-stone-900 dark:text-white tracking-tight flex items-center gap-1.5">
-              <Map size={18} /> Road Trip 2025
+              <Map size={18} /> Road Trip 2026
             </h1>
             <p className="text-xs text-stone-500 dark:text-gray-400 mt-0.5">May 28 – June 15 &middot; 19 days</p>
           </div>

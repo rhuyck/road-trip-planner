@@ -14,7 +14,7 @@ type StopModal = { dayId: string; editing: Stop | null };
 type HotelModalState = { dayId: string };
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
-const TRIP_YEAR = 2025;
+const TRIP_YEAR = 2026;
 
 function toIsoDate(mDotD: string, year: number): string {
   const [m, d] = mDotD.split('/').map((n) => parseInt(n, 10));
