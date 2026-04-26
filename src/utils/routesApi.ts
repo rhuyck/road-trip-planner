@@ -40,6 +40,7 @@ export interface ComputeRouteOptions {
    * respected either way.
    */
   departureTime?: string;
+  destinationAddress?: string;
 }
 
 export async function computeRoute(
@@ -48,9 +49,13 @@ export async function computeRoute(
   viaPoints: { lat: number; lng: number }[] = [],
   opts: ComputeRouteOptions = {},
 ): Promise<ComputedRoute | null> {
+  const destinationWaypoint = opts.destinationAddress
+    ? { address: opts.destinationAddress }
+    : toWaypoint(destination.lat, destination.lng);
+
   const body: Record<string, unknown> = {
     origin: toWaypoint(origin.lat, origin.lng),
-    destination: toWaypoint(destination.lat, destination.lng),
+    destination: destinationWaypoint,
     travelMode: 'DRIVE',
     computeAlternativeRoutes: false,
   };

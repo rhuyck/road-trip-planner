@@ -5,6 +5,7 @@ export interface LatLng {
 
 export interface Hotel {
   name: string;
+  address: string;
   url: string;
   cost: string;
   notes: string;

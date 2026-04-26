@@ -6,7 +6,7 @@ import type { Day, Hotel, Stop } from '@/types/trip';
  *
  * "Days" tab (header row expected):
  *   A id | B date | C dayOfWeek | D city | E state | F lat | G lng
- *   H hotelName | I hotelUrl | J hotelCost | K hotelNotes
+ *   H hotelName | I hotelAddress | J hotelUrl | K hotelCost | L hotelNotes | M hotelBooked
  *
  * "Stops" tab (header row expected):
  *   A id | B dayId | C orderIndex | D name | E address | F lat | G lng
@@ -21,7 +21,7 @@ const STOPS_TAB = 'Stops';
 
 const DAYS_HEADER = [
   'id', 'date', 'dayOfWeek', 'city', 'state', 'lat', 'lng',
-  'hotelName', 'hotelUrl', 'hotelCost', 'hotelNotes', 'hotelBooked',
+  'hotelName', 'hotelAddress', 'hotelUrl', 'hotelCost', 'hotelNotes', 'hotelBooked',
 ];
 
 const STOPS_HEADER = [
@@ -80,13 +80,14 @@ function asBool(v: unknown): boolean {
 }
 
 function dayFromRow(row: string[]): Day | null {
-  const [id, date, dayOfWeek, city, state, lat, lng, hotelName, hotelUrl, hotelCost, hotelNotes, hotelBooked] = row;
+  const [id, date, dayOfWeek, city, state, lat, lng, hotelName, hotelAddress, hotelUrl, hotelCost, hotelNotes, hotelBooked] = row;
   if (!id) return null;
   const latN = asNumberOrNull(lat);
   const lngN = asNumberOrNull(lng);
   if (latN == null || lngN == null) return null;
   const hotel: Hotel = {
     name: asString(hotelName),
+    address: asString(hotelAddress),
     url: asString(hotelUrl),
     cost: asString(hotelCost),
     notes: asString(hotelNotes),
@@ -108,7 +109,7 @@ function dayToRow(d: Day): (string | number)[] {
   return [
     d.id, d.date, d.dayOfWeek, d.city, d.state,
     d.location.lat, d.location.lng,
-    d.hotel.name, d.hotel.url, d.hotel.cost, d.hotel.notes,
+    d.hotel.name, d.hotel.address, d.hotel.url, d.hotel.cost, d.hotel.notes,
     d.hotel.booked ? 'TRUE' : 'FALSE',
   ];
 }
@@ -154,7 +155,7 @@ export async function readTrip(): Promise<Day[]> {
 
   const resp = await sheets.spreadsheets.values.batchGet({
     spreadsheetId,
-    ranges: [`${DAYS_TAB}!A2:K`, `${STOPS_TAB}!A2:M`],
+    ranges: [`${DAYS_TAB}!A2:M`, `${STOPS_TAB}!A2:M`],
   });
 
   const [daysRange, stopsRange] = resp.data.valueRanges ?? [];
@@ -234,7 +235,7 @@ export async function ensureInitialized(initialDays: Day[]): Promise<void> {
   // Check whether Days is empty (no header or no data). If so, seed.
   const resp = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${DAYS_TAB}!A1:K`,
+    range: `${DAYS_TAB}!A1:M`,
   });
   const rows = (resp.data.values ?? []) as string[][];
   const hasHeader = rows[0]?.[0] === 'id';
