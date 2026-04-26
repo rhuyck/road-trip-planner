@@ -5,6 +5,8 @@ import { Map3D, MapMode, useMap3D, useMapsLibrary, Map as GoogleMap, Polyline, A
 import { Day, RouteInfo } from '@/types/trip';
 import { getDayColor } from '@/utils/colors';
 import { useRoutes } from '@/hooks/useRoutes';
+import { useHotelLocations } from '@/hooks/useHotelLocations';
+import { LatLng } from '@/types/trip';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyEl = any;
@@ -78,12 +80,14 @@ function RoutePolylines({ days, routes, selectedDayId }: MapViewProps) {
 
 // ── Markers ────────────────────────────────────────────────────────────────────
 
-function MarkersLayer({ days }: { days: Day[] }) {
+function MarkersLayer({ days, hotelLocations }: { days: Day[]; hotelLocations: Record<string, LatLng> }) {
   const map3d = useMap3D();
   const maps3dLib = useMapsLibrary('maps3d') as AnyEl;
   const markerLib = useMapsLibrary('marker') as AnyEl;
   const cityMarkersRef = useRef<Map<string, AnyEl>>(new Map());
   const stopMarkersRef = useRef<Map<string, AnyEl>>(new Map());
+  const hotelMarkersRef = useRef<Map<string, AnyEl>>(new Map());
+  const hotelFpsRef = useRef<Record<string, string>>({});
 
   // City / overnight markers — amber with day number
   // Guard on markerLib too: if we create markers before PinElement is available,
@@ -139,11 +143,46 @@ function MarkersLayer({ days }: { days: Day[] }) {
     }
   }, [map3d, maps3dLib, markerLib, days]);
 
+  // Hotel markers — emerald "H" pin at geocoded address
+  useEffect(() => {
+    if (!map3d || !maps3dLib?.Marker3DElement || !markerLib?.PinElement) return;
+
+    for (const [id, m] of hotelMarkersRef.current.entries()) {
+      const loc = hotelLocations[id];
+      const fp = loc ? `${loc.lat}|${loc.lng}` : '';
+      if (!loc || hotelFpsRef.current[id] !== fp) {
+        m.remove();
+        hotelMarkersRef.current.delete(id);
+        delete hotelFpsRef.current[id];
+      }
+    }
+
+    for (const day of days) {
+      const loc = hotelLocations[day.id];
+      if (!loc || hotelMarkersRef.current.has(day.id)) continue;
+      const marker = new maps3dLib.Marker3DElement({
+        position: { lat: loc.lat, lng: loc.lng, altitude: 0 },
+        title: day.hotel.name ? `${day.hotel.name} · ${day.city}` : `Hotel – ${day.city}`,
+        altitudeMode: 'CLAMP_TO_GROUND',
+        extruded: false,
+      });
+      marker.appendChild(new markerLib.PinElement({
+        background: '#10b981', borderColor: '#059669', glyphColor: '#ffffff', scale: 1.1, glyphText: 'H',
+      }));
+      map3d.append(marker);
+      hotelMarkersRef.current.set(day.id, marker);
+      hotelFpsRef.current[day.id] = `${loc.lat}|${loc.lng}`;
+    }
+  }, [map3d, maps3dLib, markerLib, days, hotelLocations]);
+
   useEffect(() => () => {
     for (const m of cityMarkersRef.current.values()) m.remove();
     for (const m of stopMarkersRef.current.values()) m.remove();
+    for (const m of hotelMarkersRef.current.values()) m.remove();
     cityMarkersRef.current.clear();
     stopMarkersRef.current.clear();
+    hotelMarkersRef.current.clear();
+    hotelFpsRef.current = {};
   }, []);
 
   return null;
@@ -257,11 +296,11 @@ function CtrlBtn({ onClick, active, title, children }: {
 
 // ── Inner (needs Map3D context) ────────────────────────────────────────────────
 
-function MapInner({ days, selectedDayId, routes, requestReset }: MapViewProps & { requestReset: number }) {
+function MapInner({ days, selectedDayId, routes, requestReset, hotelLocations }: MapViewProps & { requestReset: number; hotelLocations: Record<string, LatLng> }) {
   return (
     <>
       <RoutePolylines days={days} routes={routes} selectedDayId={selectedDayId} />
-      <MarkersLayer days={days} />
+      <MarkersLayer days={days} hotelLocations={hotelLocations} />
       <CameraController days={days} selectedDayId={selectedDayId} requestReset={requestReset} />
     </>
   );
@@ -269,7 +308,7 @@ function MapInner({ days, selectedDayId, routes, requestReset }: MapViewProps & 
 
 // ── 2D map content (rendered inside <Map> context) ─────────────────────────────
 
-function Map2DContent({ days, selectedDayId, routes }: MapViewProps) {
+function Map2DContent({ days, selectedDayId, routes, hotelLocations }: MapViewProps & { hotelLocations: Record<string, LatLng> }) {
   return (
     <>
       {/* Route polylines */}
@@ -342,6 +381,38 @@ function Map2DContent({ days, selectedDayId, routes }: MapViewProps) {
           ))
       )}
 
+      {/* Hotel markers */}
+      {days.flatMap((day) => {
+        const loc = hotelLocations[day.id];
+        if (!loc) return [];
+        return (
+          <AdvancedMarker
+            key={`hotel-${day.id}`}
+            position={{ lat: loc.lat, lng: loc.lng }}
+            title={day.hotel.name ? `${day.hotel.name} · ${day.city}` : `Hotel – ${day.city}`}
+          >
+            <div
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: '50%',
+                backgroundColor: '#10b981',
+                border: '2px solid #059669',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 9,
+                fontWeight: 700,
+                color: '#fff',
+              }}
+            >
+              H
+            </div>
+          </AdvancedMarker>
+        );
+      })}
+
       {/* Pan controller */}
       <Map2DPanController days={days} selectedDayId={selectedDayId} />
     </>
@@ -352,6 +423,7 @@ function Map2DContent({ days, selectedDayId, routes }: MapViewProps) {
 
 export function MapView({ days, selectedDayId, routes }: MapViewProps) {
   useRoutes(days);
+  const hotelLocations = useHotelLocations(days);
   const [mapMode, setMapMode] = useState<MapMode>(MapMode.SATELLITE);
   const [resetSeq, setResetSeq] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('3d');
@@ -366,7 +438,7 @@ export function MapView({ days, selectedDayId, routes }: MapViewProps) {
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
           mode={mapMode}
         >
-          <MapInner days={days} selectedDayId={selectedDayId} routes={routes} requestReset={resetSeq} />
+          <MapInner days={days} selectedDayId={selectedDayId} routes={routes} requestReset={resetSeq} hotelLocations={hotelLocations} />
         </Map3D>
       ) : (
         <GoogleMap
@@ -376,7 +448,7 @@ export function MapView({ days, selectedDayId, routes }: MapViewProps) {
           defaultZoom={5}
           mapId="DEMO_MAP_ID"
         >
-          <Map2DContent days={days} selectedDayId={selectedDayId} routes={routes} />
+          <Map2DContent days={days} selectedDayId={selectedDayId} routes={routes} hotelLocations={hotelLocations} />
         </GoogleMap>
       )}
 
