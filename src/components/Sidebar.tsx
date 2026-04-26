@@ -11,9 +11,10 @@ interface Props {
   onAddStop: (dayId: string) => void;
   onEditStop: (dayId: string, stop: Stop) => void;
   onEditHotel: (dayId: string) => void;
+  isGuest?: boolean;
 }
 
-export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, onEditHotel }: Props) {
+export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, onEditHotel, isGuest }: Props) {
   const days = useTripStore((s) => s.days);
   const selectedDayId = useTripStore((s) => s.selectedDayId);
   const routes = useTripStore((s) => s.routes);
@@ -137,6 +138,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, o
             originLocation={i > 0 ? days[i - 1].location : null}
             isSelected={selectedDayId === day.id}
             route={routes[day.id]}
+            isGuest={isGuest}
             onSelect={() => setSelectedDay(day.id === selectedDayId ? null : day.id)}
             onAddStop={() => onAddStop(day.id)}
             onEditStop={(stop) => onEditStop(day.id, stop)}
