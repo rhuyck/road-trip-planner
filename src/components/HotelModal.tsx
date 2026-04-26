@@ -113,6 +113,8 @@ export function HotelModal({ dayLabel, hotel, city, state, checkIn, checkOut, on
 
           {field('name', 'Hotel Name', 'e.g. Motel 6 Kansas City')}
 
+          {field('address', 'Address', '123 Main St, Denver, CO 80201', { optional: true })}
+
           {field('url', 'Booking URL', 'https://…', { optional: true })}
 
           <div>

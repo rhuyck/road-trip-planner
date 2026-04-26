@@ -10,7 +10,7 @@ function legFingerprint(prev: Day, curr: Day, departureTime: string): string {
     .filter((s) => s.location)
     .map((s) => `${s.location!.lat},${s.location!.lng}`)
     .join(';');
-  return `${prev.location.lat},${prev.location.lng}|${curr.location.lat},${curr.location.lng}|${stops}|${departureTime}`;
+  return `${prev.location.lat},${prev.location.lng}|${curr.location.lat},${curr.location.lng}|${stops}|${departureTime}|${curr.hotel.address}`;
 }
 
 /**
@@ -72,6 +72,7 @@ export function useRoutes(days: Day[]) {
         try {
           const result = await computeRoute(prev.location, curr.location, viaPoints, {
             departureTime: departureTimes[curr.id],
+            ...(curr.hotel.address ? { destinationAddress: curr.hotel.address } : {}),
           });
           // Discard if a newer change superseded this request in-flight
           if (fingerprintsRef.current[curr.id] !== fp) continue;
