@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { MapView } from '@/components/MapView';
 import { AddStopModal } from '@/components/AddStopModal';
 import { HotelModal } from '@/components/HotelModal';
+import { PinGate } from '@/components/PinGate';
 import { loadTripFromServer, startTripSync } from '@/lib/tripSync';
 
 type StopModal = { dayId: string; editing: Stop | null };
@@ -28,6 +29,14 @@ function addDaysIso(iso: string, days: number): string {
 }
 
 export default function Page() {
+  return (
+    <PinGate>
+      {(isGuest) => <TripApp isGuest={isGuest} />}
+    </PinGate>
+  );
+}
+
+function TripApp({ isGuest }: { isGuest: boolean }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [stopModal, setStopModal] = useState<StopModal | null>(null);
   const [hotelModal, setHotelModal] = useState<HotelModalState | null>(null);
@@ -85,9 +94,10 @@ export default function Page() {
         <Sidebar
           collapsed={sidebarCollapsed}
           onToggleCollapsed={() => setSidebarCollapsed((v) => !v)}
-          onAddStop={(dayId) => setStopModal({ dayId, editing: null })}
-          onEditStop={(dayId, stop) => setStopModal({ dayId, editing: stop })}
-          onEditHotel={(dayId) => setHotelModal({ dayId })}
+          onAddStop={isGuest ? () => {} : (dayId) => setStopModal({ dayId, editing: null })}
+          onEditStop={isGuest ? () => {} : (dayId, stop) => setStopModal({ dayId, editing: stop })}
+          onEditHotel={isGuest ? () => {} : (dayId) => setHotelModal({ dayId })}
+          isGuest={isGuest}
         />
 
         <MapView days={days} selectedDayId={selectedDayId} routes={routes} />

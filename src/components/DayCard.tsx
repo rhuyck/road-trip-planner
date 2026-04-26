@@ -12,6 +12,7 @@ interface Props {
   originLocation: { lat: number; lng: number } | null;
   isSelected: boolean;
   route?: RouteInfo;
+  isGuest?: boolean;
   onSelect: () => void;
   onAddStop: () => void;
   onEditStop: (stop: Stop) => void;
@@ -46,7 +47,7 @@ function buildDayMapsUrl(
 }
 
 export function DayCard({
-  day, index, originCity, originLocation, isSelected, route,
+  day, index, originCity, originLocation, isSelected, route, isGuest,
   onSelect, onAddStop, onEditStop, onRemoveStop, onReorderStop, onEditHotel,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
@@ -253,18 +254,22 @@ export function DayCard({
                         <MapPin size={12} />
                       </a>
                     )}
-                    <button
-                      onClick={() => onEditStop(stop)}
-                      className="text-stone-500 dark:text-gray-400 hover:text-stone-900 dark:hover:text-white text-xs px-1.5 py-1 rounded hover:bg-stone-200 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      <Pencil size={12} />
-                    </button>
-                    <button
-                      onClick={() => onRemoveStop(stop.id)}
-                      className="text-stone-500 dark:text-gray-400 hover:text-red-400 text-xs px-1.5 py-1 rounded hover:bg-stone-200 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      <Trash2 size={12} />
-                    </button>
+                    {!isGuest && (
+                      <button
+                        onClick={() => onEditStop(stop)}
+                        className="text-stone-500 dark:text-gray-400 hover:text-stone-900 dark:hover:text-white text-xs px-1.5 py-1 rounded hover:bg-stone-200 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        <Pencil size={12} />
+                      </button>
+                    )}
+                    {!isGuest && (
+                      <button
+                        onClick={() => onRemoveStop(stop.id)}
+                        className="text-stone-500 dark:text-gray-400 hover:text-red-400 text-xs px-1.5 py-1 rounded hover:bg-stone-200 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -286,30 +291,32 @@ export function DayCard({
             );
           })}
 
-          <div className="flex gap-2 pt-1">
-            <button
-              onClick={onAddStop}
-              className="flex-1 py-1.5 text-xs font-medium bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-600/30 rounded-lg transition-colors"
-            >
-              + Add Stop
-            </button>
-            <button
-              onClick={onEditHotel}
-              className={`flex-1 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
-                hasHotel
-                  ? 'bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border-amber-600/30'
-                  : 'bg-stone-100 dark:bg-gray-700 hover:bg-stone-200 dark:hover:bg-gray-600 text-stone-500 dark:text-gray-400 border-stone-300 dark:border-gray-600'
-              }`}
-            >
-              {hasHotel ? (
-                hotelBooked
-                  ? <><BedDouble size={12} className="inline-block mr-1" />Edit Hotel ✓</>
-                  : <><BedDouble size={12} className="inline-block mr-1" />Edit Hotel</>
-              ) : (
-                <><BedDouble size={12} className="inline-block mr-1" />Add Hotel</>
-              )}
-            </button>
-          </div>
+          {!isGuest && (
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={onAddStop}
+                className="flex-1 py-1.5 text-xs font-medium bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-600/30 rounded-lg transition-colors"
+              >
+                + Add Stop
+              </button>
+              <button
+                onClick={onEditHotel}
+                className={`flex-1 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
+                  hasHotel
+                    ? 'bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border-amber-600/30'
+                    : 'bg-stone-100 dark:bg-gray-700 hover:bg-stone-200 dark:hover:bg-gray-600 text-stone-500 dark:text-gray-400 border-stone-300 dark:border-gray-600'
+                }`}
+              >
+                {hasHotel ? (
+                  hotelBooked
+                    ? <><BedDouble size={12} className="inline-block mr-1" />Edit Hotel ✓</>
+                    : <><BedDouble size={12} className="inline-block mr-1" />Edit Hotel</>
+                ) : (
+                  <><BedDouble size={12} className="inline-block mr-1" />Add Hotel</>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
