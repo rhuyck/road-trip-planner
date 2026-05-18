@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { Map, Sun, Moon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Map, Sun, Moon, ChevronLeft, ChevronRight, List } from 'lucide-react';
 import { useTripStore } from '@/store/tripStore';
 import { Day, RouteInfo, Stop } from '@/types/trip';
 import { DayCard } from './DayCard';
@@ -11,10 +11,11 @@ interface Props {
   onAddStop: (dayId: string) => void;
   onEditStop: (dayId: string, stop: Stop) => void;
   onEditHotel: (dayId: string) => void;
+  onOpenLists: () => void;
   isGuest?: boolean;
 }
 
-export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, onEditHotel, isGuest }: Props) {
+export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, onEditHotel, onOpenLists, isGuest }: Props) {
   const days = useTripStore((s) => s.days);
   const selectedDayId = useTripStore((s) => s.selectedDayId);
   const routes = useTripStore((s) => s.routes);
@@ -102,6 +103,14 @@ export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, o
             </h1>
             <p className="text-xs text-stone-500 dark:text-gray-400 mt-0.5">May 28 – June 15 &middot; 19 days</p>
           </div>
+          <button
+            onClick={onOpenLists}
+            aria-label="Open lists"
+            title="Lists"
+            className="flex-shrink-0 w-7 h-7 flex items-center justify-center text-stone-500 dark:text-gray-400 hover:text-stone-900 dark:hover:text-white hover:bg-stone-100 dark:hover:bg-gray-800 rounded transition-colors"
+          >
+            <List size={14} />
+          </button>
           <button
             onClick={toggleTheme}
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}

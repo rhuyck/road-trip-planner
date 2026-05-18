@@ -8,7 +8,9 @@ import { MapView } from '@/components/MapView';
 import { AddStopModal } from '@/components/AddStopModal';
 import { HotelModal } from '@/components/HotelModal';
 import { PinGate } from '@/components/PinGate';
+import { ListsModal } from '@/components/ListsModal';
 import { loadTripFromServer, startTripSync } from '@/lib/tripSync';
+import { loadListsFromServer, startListsSync } from '@/lib/listsSync';
 
 type StopModal = { dayId: string; editing: Stop | null };
 type HotelModalState = { dayId: string };
@@ -40,6 +42,7 @@ function TripApp({ isGuest }: { isGuest: boolean }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [stopModal, setStopModal] = useState<StopModal | null>(null);
   const [hotelModal, setHotelModal] = useState<HotelModalState | null>(null);
+  const [listsOpen, setListsOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const days = useTripStore((s) => s.days);
@@ -52,8 +55,13 @@ function TripApp({ isGuest }: { isGuest: boolean }) {
 
   useEffect(() => {
     startTripSync();
+    startListsSync();
     loadTripFromServer().catch((err) => {
       setLoadError(err instanceof Error ? err.message : String(err));
+    });
+    loadListsFromServer().catch((err) => {
+      // Non-fatal: trip loads independently; log but don't block the app.
+      console.error('Failed to load lists:', err);
     });
   }, []);
 
@@ -97,6 +105,7 @@ function TripApp({ isGuest }: { isGuest: boolean }) {
           onAddStop={isGuest ? () => {} : (dayId) => setStopModal({ dayId, editing: null })}
           onEditStop={isGuest ? () => {} : (dayId, stop) => setStopModal({ dayId, editing: stop })}
           onEditHotel={isGuest ? () => {} : (dayId) => setHotelModal({ dayId })}
+          onOpenLists={() => setListsOpen(true)}
           isGuest={isGuest}
         />
 
@@ -120,6 +129,10 @@ function TripApp({ isGuest }: { isGuest: boolean }) {
           }}
           onClose={() => setStopModal(null)}
         />
+      )}
+
+      {listsOpen && (
+        <ListsModal isGuest={isGuest} onClose={() => setListsOpen(false)} />
       )}
 
       {hotelModal && activeHotelDay && (

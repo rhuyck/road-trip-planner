@@ -41,6 +41,19 @@ export interface RouteLeg {
   durationSeconds: number;
 }
 
+export interface ListItem {
+  id: string;
+  text: string;
+  checked: boolean;
+  order: number;
+}
+
+export interface TripList {
+  id: string;
+  name: string;
+  items: ListItem[];
+}
+
 export interface RouteInfo {
   path: Array<{ lat: number; lng: number }>;
   distanceText: string;
