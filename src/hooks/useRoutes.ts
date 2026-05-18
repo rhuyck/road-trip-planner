@@ -2,15 +2,18 @@
 import { useEffect, useRef } from 'react';
 import { useApiIsLoaded } from '@vis.gl/react-google-maps';
 import { useTripStore } from '@/store/tripStore';
-import { Day } from '@/types/trip';
+import { Day, LatLng } from '@/types/trip';
 import { computeRoute, formatMi, formatDuration } from '@/utils/routesApi';
 
-function legFingerprint(prev: Day, curr: Day, departureTime: string): string {
+function legFingerprint(prev: Day, curr: Day, departureTime: string, prevHotelLocation?: LatLng): string {
   const stops = curr.stops
     .filter((s) => s.location)
     .map((s) => `${s.location!.lat},${s.location!.lng}`)
     .join(';');
-  return `${prev.location.lat},${prev.location.lng}|${curr.location.lat},${curr.location.lng}|${stops}|${departureTime}|${curr.hotel.address}`;
+  const originStr = prevHotelLocation
+    ? `${prevHotelLocation.lat},${prevHotelLocation.lng}`
+    : `${prev.location.lat},${prev.location.lng}`;
+  return `${originStr}|${curr.location.lat},${curr.location.lng}|${stops}|${departureTime}|${curr.hotel.address}`;
 }
 
 /**
@@ -40,7 +43,7 @@ function departureTimeFor(mDotD: string): string {
   return candidate.toISOString();
 }
 
-export function useRoutes(days: Day[]) {
+export function useRoutes(days: Day[], hotelLocations: Record<string, LatLng> = {}) {
   const apiLoaded = useApiIsLoaded();
   const setRoute = useTripStore((s) => s.setRoute);
   const fingerprintsRef = useRef<Record<string, string>>({});
@@ -51,9 +54,11 @@ export function useRoutes(days: Day[]) {
     const dirtyIndices: number[] = [];
     const departureTimes: Record<string, string> = {};
     for (let i = 1; i < days.length; i++) {
+      const prev = days[i - 1];
+      const prevHotelLocation = prev.hotel.address ? hotelLocations[prev.id] : undefined;
       const dep = departureTimeFor(days[i].date);
       departureTimes[days[i].id] = dep;
-      const fp = legFingerprint(days[i - 1], days[i], dep);
+      const fp = legFingerprint(prev, days[i], dep, prevHotelLocation);
       if (fingerprintsRef.current[days[i].id] !== fp) {
         fingerprintsRef.current[days[i].id] = fp;
         dirtyIndices.push(i);
@@ -67,10 +72,12 @@ export function useRoutes(days: Day[]) {
         const prev = days[i - 1];
         const curr = days[i];
         const viaPoints = curr.stops.filter((s) => s.location).map((s) => s.location!);
+        const prevHotelLocation = prev.hotel.address ? hotelLocations[prev.id] : undefined;
+        const origin = prevHotelLocation ?? prev.location;
 
         const fp = fingerprintsRef.current[curr.id];
         try {
-          const result = await computeRoute(prev.location, curr.location, viaPoints, {
+          const result = await computeRoute(origin, curr.location, viaPoints, {
             departureTime: departureTimes[curr.id],
             ...(curr.hotel.address ? { destinationAddress: curr.hotel.address } : {}),
           });
@@ -95,5 +102,5 @@ export function useRoutes(days: Day[]) {
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiLoaded, days]);
+  }, [apiLoaded, days, hotelLocations]);
 }
