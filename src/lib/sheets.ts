@@ -1,5 +1,5 @@
 import { google, sheets_v4 } from 'googleapis';
-import type { Day, Hotel, Stop } from '@/types/trip';
+import type { Day, Hotel, Stop, TripList, ListItem } from '@/types/trip';
 
 /**
  * Schema
@@ -18,6 +18,7 @@ import type { Day, Hotel, Stop } from '@/types/trip';
 
 const DAYS_TAB = 'Days';
 const STOPS_TAB = 'Stops';
+const LISTS_TAB = 'Lists';
 
 const DAYS_HEADER = [
   'id', 'date', 'dayOfWeek', 'city', 'state', 'lat', 'lng',
@@ -214,6 +215,76 @@ export async function writeTrip(days: Day[]): Promise<void> {
   });
 }
 
+// ── Lists tab ─────────────────────────────────────────────────────────────────
+//
+// "Lists" tab (header row expected):
+//   A listId | B listName | C itemId | D itemText | E itemChecked | F itemOrder
+//
+// One row per item; list metadata (id, name) is repeated on every item row.
+
+const LISTS_HEADER = ['listId', 'listName', 'itemId', 'itemText', 'itemChecked', 'itemOrder'];
+
+function listsFromRows(rows: string[][]): TripList[] {
+  const map = new Map<string, TripList>();
+  for (const row of rows) {
+    const [listId, listName, itemId, itemText, itemChecked, itemOrder] = row;
+    if (!listId) continue;
+    if (!map.has(listId)) map.set(listId, { id: listId, name: asString(listName), items: [] });
+    const list = map.get(listId)!;
+    if (itemId) {
+      const item: ListItem = {
+        id: asString(itemId),
+        text: asString(itemText),
+        checked: asBool(itemChecked),
+        order: asNumberOrNull(itemOrder) ?? list.items.length,
+      };
+      list.items.push(item);
+    }
+  }
+  for (const list of map.values()) {
+    list.items.sort((a, b) => a.order - b.order);
+  }
+  return Array.from(map.values());
+}
+
+function listsToRows(lists: TripList[]): (string | number)[][] {
+  const rows: (string | number)[][] = [LISTS_HEADER];
+  for (const list of lists) {
+    if (list.items.length === 0) {
+      rows.push([list.id, list.name, '', '', '', '']);
+    } else {
+      list.items.forEach((item, i) => {
+        rows.push([list.id, list.name, item.id, item.text, item.checked ? 'TRUE' : 'FALSE', i]);
+      });
+    }
+  }
+  return rows;
+}
+
+export async function readLists(): Promise<TripList[]> {
+  const sheets = getClient();
+  const resp = await sheets.spreadsheets.values.get({
+    spreadsheetId: sheetId(),
+    range: `${LISTS_TAB}!A2:F`,
+  });
+  return listsFromRows((resp.data.values ?? []) as string[][]);
+}
+
+export async function writeLists(lists: TripList[]): Promise<void> {
+  const sheets = getClient();
+  const spreadsheetId = sheetId();
+  await sheets.spreadsheets.values.clear({
+    spreadsheetId,
+    range: `${LISTS_TAB}!A2:Z`,
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${LISTS_TAB}!A1`,
+    valueInputOption: 'RAW',
+    requestBody: { values: listsToRows(lists) },
+  });
+}
+
 /** Create tabs + headers if missing; seed with initial days if Days is empty. */
 export async function ensureInitialized(initialDays: Day[]): Promise<void> {
   const sheets = getClient();
@@ -225,6 +296,7 @@ export async function ensureInitialized(initialDays: Day[]): Promise<void> {
   const addRequests: sheets_v4.Schema$Request[] = [];
   if (!titles.has(DAYS_TAB)) addRequests.push({ addSheet: { properties: { title: DAYS_TAB } } });
   if (!titles.has(STOPS_TAB)) addRequests.push({ addSheet: { properties: { title: STOPS_TAB } } });
+  if (!titles.has(LISTS_TAB)) addRequests.push({ addSheet: { properties: { title: LISTS_TAB } } });
   if (addRequests.length > 0) {
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
@@ -257,5 +329,19 @@ export async function ensureInitialized(initialDays: Day[]): Promise<void> {
         requestBody: { values: [STOPS_HEADER] },
       });
     }
+  }
+
+  // Ensure Lists header row exists.
+  const listsHeaderResp = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${LISTS_TAB}!A1:F1`,
+  });
+  if (!((listsHeaderResp.data.values?.[0]?.[0]) === 'listId')) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${LISTS_TAB}!A1`,
+      valueInputOption: 'RAW',
+      requestBody: { values: [LISTS_HEADER] },
+    });
   }
 }
