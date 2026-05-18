@@ -57,13 +57,13 @@ export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, o
       }
     }
 
-    // Gas estimate: $5.50/gal in CA, $3.50/gal elsewhere, at 25 mpg
+    // Gas estimate: $6.00/gal in CA, $4.50/gal elsewhere, at 25 mpg
     let gasTotal = 0;
     for (const d of days) {
       const r = routes[d.id];
       if (!r) continue;
       const miles = r.distanceMeters / 1609.34;
-      const price = d.state === 'CA' ? 5.50 : 3.50;
+      const price = d.state === 'CA' ? 6.00 : 4.50;
       gasTotal += (miles / 25) * price;
     }
 
@@ -133,7 +133,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, o
           <Stat label="Miles" value={stats.totalMi > 0 ? `~${stats.totalMi.toLocaleString()}` : '—'} />
           <Stat label="Drive Days" value={stats.totalMi > 0 ? `${stats.totalDays}d ${stats.remHours}h` : '—'} sub="@ 8 hrs/day" />
           <Stat label="Est. Cost" value={stats.costTotal > 0 ? `$${stats.costTotal.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '—'} />
-          <Stat label="Gas Est." value={stats.gasTotal > 0 ? `~$${Math.round(stats.gasTotal).toLocaleString()}` : '—'} sub="$3.50–$5.50/gal · 25mpg" />
+          <Stat label="Gas Est." value={stats.gasTotal > 0 ? `~$${Math.round(stats.gasTotal).toLocaleString()}` : '—'} sub="$4.50–$6.00/gal · 25mpg" />
         </div>
       </div>
 
