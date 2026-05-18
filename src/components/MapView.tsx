@@ -422,8 +422,8 @@ function Map2DContent({ days, selectedDayId, routes, hotelLocations }: MapViewPr
 // ── Export ─────────────────────────────────────────────────────────────────────
 
 export function MapView({ days, selectedDayId, routes }: MapViewProps) {
-  useRoutes(days);
   const hotelLocations = useHotelLocations(days);
+  useRoutes(days, hotelLocations);
   const [mapMode, setMapMode] = useState<MapMode>(MapMode.SATELLITE);
   const [resetSeq, setResetSeq] = useState(0);
   const [viewMode, setViewMode] = useState<ViewMode>('3d');
