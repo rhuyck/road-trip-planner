@@ -1,5 +1,5 @@
 import { google, sheets_v4 } from 'googleapis';
-import type { Day, Hotel, Stop, TripList, ListItem } from '@/types/trip';
+import type { Day, Hotel, Stop, TripList, ListItem, CompletenessLevel } from '@/types/trip';
 
 /**
  * Schema
@@ -23,6 +23,7 @@ const LISTS_TAB = 'Lists';
 const DAYS_HEADER = [
   'id', 'date', 'dayOfWeek', 'city', 'state', 'lat', 'lng',
   'hotelName', 'hotelUrl', 'hotelCost', 'hotelNotes', 'hotelBooked', 'hotelAddress',
+  'completeness',
 ];
 
 const STOPS_HEADER = [
@@ -80,8 +81,10 @@ function asBool(v: unknown): boolean {
   return false;
 }
 
+const VALID_COMPLETENESS = new Set(['UNSET', 'PACKED', 'BUSY', 'MODERATE', 'OPEN']);
+
 function dayFromRow(row: string[]): Day | null {
-  const [id, date, dayOfWeek, city, state, lat, lng, hotelName, hotelUrl, hotelCost, hotelNotes, hotelBooked, hotelAddress] = row;
+  const [id, date, dayOfWeek, city, state, lat, lng, hotelName, hotelUrl, hotelCost, hotelNotes, hotelBooked, hotelAddress, completenessRaw] = row;
   if (!id) return null;
   const latN = asNumberOrNull(lat);
   const lngN = asNumberOrNull(lng);
@@ -94,6 +97,9 @@ function dayFromRow(row: string[]): Day | null {
     notes: asString(hotelNotes),
     booked: asBool(hotelBooked),
   };
+  const completeness = VALID_COMPLETENESS.has(asString(completenessRaw))
+    ? (asString(completenessRaw) as CompletenessLevel)
+    : 'UNSET';
   return {
     id: asString(id),
     date: asString(date),
@@ -103,6 +109,7 @@ function dayFromRow(row: string[]): Day | null {
     location: { lat: latN, lng: lngN },
     hotel,
     stops: [],
+    completeness,
   };
 }
 
@@ -112,6 +119,7 @@ function dayToRow(d: Day): (string | number)[] {
     d.location.lat, d.location.lng,
     d.hotel.name, d.hotel.url, d.hotel.cost, d.hotel.notes,
     d.hotel.booked ? 'TRUE' : 'FALSE', d.hotel.address,
+    d.completeness ?? 'UNSET',
   ];
 }
 
@@ -156,7 +164,7 @@ export async function readTrip(): Promise<Day[]> {
 
   const resp = await sheets.spreadsheets.values.batchGet({
     spreadsheetId,
-    ranges: [`${DAYS_TAB}!A2:M`, `${STOPS_TAB}!A2:M`],
+    ranges: [`${DAYS_TAB}!A2:N`, `${STOPS_TAB}!A2:M`],
   });
 
   const [daysRange, stopsRange] = resp.data.valueRanges ?? [];
@@ -200,7 +208,7 @@ export async function writeTrip(days: Day[]): Promise<void> {
   // Clear then write, so deleted rows actually disappear.
   await sheets.spreadsheets.values.batchClear({
     spreadsheetId,
-    requestBody: { ranges: [`${DAYS_TAB}!A2:Z`, `${STOPS_TAB}!A2:Z`] },
+    requestBody: { ranges: [`${DAYS_TAB}!A2:N`, `${STOPS_TAB}!A2:Z`] },
   });
 
   await sheets.spreadsheets.values.batchUpdate({
@@ -307,7 +315,7 @@ export async function ensureInitialized(initialDays: Day[]): Promise<void> {
   // Check whether Days is empty (no header or no data). If so, seed.
   const resp = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${DAYS_TAB}!A1:M`,
+    range: `${DAYS_TAB}!A1:N`,
   });
   const rows = (resp.data.values ?? []) as string[][];
   const hasHeader = rows[0]?.[0] === 'id';

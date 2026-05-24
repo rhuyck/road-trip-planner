@@ -4,6 +4,7 @@ import { X, ExternalLink } from 'lucide-react';
 import { useMapsLibrary } from '@vis.gl/react-google-maps';
 import { LatLng, Stop } from '@/types/trip';
 import { computeRoute, formatMi, formatDuration } from '@/utils/routesApi';
+import { COMPLETENESS, COMPLETENESS_LEVELS, type CompletenessLevel } from '@/utils/completeness';
 
 interface LegInfo {
   distanceMeters: number;
@@ -17,6 +18,8 @@ interface Props {
   dayDestCity: string;
   dayOriginLocation: LatLng | null;
   dayDestLocation: LatLng;
+  dayCompleteness: CompletenessLevel;
+  onUpdateCompleteness: (level: CompletenessLevel) => void;
   onSave: (stop: Omit<Stop, 'id'>) => void;
   onClose: () => void;
 }
@@ -29,9 +32,11 @@ const EMPTY: Omit<Stop, 'id'> = {
 export function AddStopModal({
   dayLabel, editingStop,
   dayOriginCity, dayDestCity, dayOriginLocation, dayDestLocation,
+  dayCompleteness, onUpdateCompleteness,
   onSave, onClose,
 }: Props) {
   const [form, setForm] = useState<Omit<Stop, 'id'>>(editingStop ? { ...editingStop } : EMPTY);
+  const [localCompleteness, setLocalCompleteness] = useState<CompletenessLevel>(dayCompleteness);
   const [geocoding, setGeocoding] = useState(false);
   const [geocodeError, setGeocodeError] = useState('');
   const [legToStop, setLegToStop] = useState<LegInfo | null>(null);
@@ -43,8 +48,10 @@ export function AddStopModal({
   useEffect(() => {
     if (editingStop) setForm({ ...editingStop });
     else setForm(EMPTY);
+    setLocalCompleteness(dayCompleteness);
     setLegToStop(null);
     setLegFromStop(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingStop]);
 
   const geocodeAddress = useCallback(async () => {
@@ -261,6 +268,46 @@ export function AddStopModal({
 
           {field('url', 'Website', 'https://…', { optional: true })}
           {field('notes', 'Notes', 'Any notes…', { textarea: true, optional: true })}
+
+          <div>
+            <label className="block text-sm font-medium text-stone-600 dark:text-gray-300 mb-2">
+              Day Completeness
+            </label>
+            <div className="flex gap-2">
+              {COMPLETENESS_LEVELS.map((level) => {
+                const cfg = COMPLETENESS[level];
+                const isActive = localCompleteness === level;
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => {
+                      const next: CompletenessLevel = isActive ? 'UNSET' : level;
+                      setLocalCompleteness(next);
+                      onUpdateCompleteness(next);
+                    }}
+                    className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                      isActive
+                        ? 'text-white border-transparent'
+                        : 'text-stone-500 dark:text-gray-400 border-stone-300 dark:border-gray-600 bg-stone-50 dark:bg-gray-700 hover:border-stone-400 dark:hover:border-gray-500'
+                    }`}
+                    style={isActive ? { backgroundColor: cfg.color, borderColor: cfg.color } : {}}
+                  >
+                    {cfg.label}
+                  </button>
+                );
+              })}
+            </div>
+            {localCompleteness !== 'UNSET' && (
+              <button
+                type="button"
+                onClick={() => { setLocalCompleteness('UNSET'); onUpdateCompleteness('UNSET'); }}
+                className="mt-1.5 text-xs text-stone-400 dark:text-gray-500 hover:text-stone-600 dark:hover:text-gray-300 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 bg-stone-100 dark:bg-gray-700 hover:bg-stone-200 dark:hover:bg-gray-600 text-stone-900 dark:text-white rounded-lg transition-colors">
