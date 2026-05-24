@@ -1,3 +1,7 @@
+import type { CompletenessLevel } from '@/utils/completeness';
+
+export type { CompletenessLevel };
+
 export interface LatLng {
   lat: number;
   lng: number;
@@ -34,6 +38,7 @@ export interface Day {
   location: LatLng;
   hotel: Hotel;
   stops: Stop[];
+  completeness?: CompletenessLevel;
 }
 
 export interface RouteLeg {

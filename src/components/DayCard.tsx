@@ -1,8 +1,9 @@
 'use client';
 import { Fragment, useState } from 'react';
-import { BedDouble, Car, Fuel, Clock, Banknote, Pencil, Trash2, MapPin, Route, ExternalLink, ChevronUp, ChevronDown } from 'lucide-react';
+import { BedDouble, Car, Fuel, Clock, Banknote, Pencil, Trash2, MapPin, Route, ExternalLink, ChevronUp, ChevronDown, TriangleAlert } from 'lucide-react';
 import { Day, RouteInfo, Stop } from '@/types/trip';
 import { getDayColor } from '@/utils/colors';
+import { COMPLETENESS } from '@/utils/completeness';
 import { formatDuration } from '@/utils/routesApi';
 
 interface Props {
@@ -51,7 +52,11 @@ export function DayCard({
   onSelect, onAddStop, onEditStop, onRemoveStop, onReorderStop, onEditHotel,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const color = getDayColor(index);
+  const completenessColor = (day.completeness && day.completeness !== 'UNSET')
+    ? COMPLETENESS[day.completeness].color
+    : null;
   const hasHotel = !!day.hotel.name;
   const hotelBooked = hasHotel && day.hotel.booked;
 
@@ -79,21 +84,46 @@ export function DayCard({
   }
   const hasLegs = !!(route?.legs && route.legs.length === li + 1 && li >= 1);
 
+  const outerStyle: React.CSSProperties = completenessColor
+    ? {
+        borderColor: completenessColor,
+        borderWidth: '3px',
+        boxShadow: hovered
+          ? `0 0 18px 4px ${completenessColor}50, 0 0 6px 1px ${completenessColor}30`
+          : isSelected
+          ? `0 0 8px 2px ${completenessColor}40`
+          : undefined,
+      }
+    : isSelected
+    ? { borderColor: color, boxShadow: `0 0 0 1px ${color}40` }
+    : {};
+
+  const outerClassName = `rounded-xl border transition-all duration-200 ${
+    completenessColor
+      ? ''
+      : isSelected
+      ? 'border-opacity-80 shadow-lg'
+      : 'border-stone-200 dark:border-gray-700 hover:border-stone-400 dark:hover:border-gray-500'
+  }`;
+
   return (
     <div
-      className={`rounded-xl border transition-all duration-150 ${
-        isSelected
-          ? 'border-opacity-80 shadow-lg'
-          : 'border-stone-200 dark:border-gray-700 hover:border-stone-400 dark:hover:border-gray-500'
-      }`}
-      style={isSelected ? { borderColor: color, boxShadow: `0 0 0 1px ${color}40` } : {}}
+      className={outerClassName}
+      style={outerStyle}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <div className="p-3 flex items-start gap-3 cursor-pointer select-none" onClick={() => { onSelect(); setExpanded(true); }}>
-        <div
-          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-gray-900"
-          style={{ backgroundColor: color }}
-        >
-          {index + 1}
+        <div className="flex-shrink-0 flex flex-col items-center gap-0.5">
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-gray-900"
+            style={{ backgroundColor: color }}
+          >
+            {index + 1}
+          </div>
+          {(!day.completeness || day.completeness === 'UNSET') && (
+            <TriangleAlert size={12} className="text-amber-400" />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2">

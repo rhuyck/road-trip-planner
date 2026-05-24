@@ -52,6 +52,7 @@ function TripApp({ isGuest }: { isGuest: boolean }) {
   const addStop = useTripStore((s) => s.addStop);
   const updateStop = useTripStore((s) => s.updateStop);
   const updateHotel = useTripStore((s) => s.updateHotel);
+  const updateDayCompleteness = useTripStore((s) => s.updateDayCompleteness);
 
   useEffect(() => {
     startTripSync();
@@ -120,6 +121,8 @@ function TripApp({ isGuest }: { isGuest: boolean }) {
           dayDestCity={activeDay.city}
           dayOriginLocation={activeDayIdx > 0 ? days[activeDayIdx - 1].location : null}
           dayDestLocation={activeDay.location}
+          dayCompleteness={activeDay.completeness ?? 'UNSET'}
+          onUpdateCompleteness={(level) => updateDayCompleteness(stopModal.dayId, level)}
           onSave={(stop) => {
             if (stopModal.editing) {
               updateStop(stopModal.dayId, stopModal.editing.id, stop);
