@@ -1,5 +1,5 @@
 import { google, sheets_v4 } from 'googleapis';
-import type { Day, Hotel, Stop, TripList, ListItem, CompletenessLevel } from '@/types/trip';
+import type { Day, DayDebrief, Hotel, Stop, TripList, ListItem, CompletenessLevel } from '@/types/trip';
 
 /**
  * Schema
@@ -7,6 +7,9 @@ import type { Day, Hotel, Stop, TripList, ListItem, CompletenessLevel } from '@/
  * "Days" tab (header row expected):
  *   A id | B date | C dayOfWeek | D city | E state | F lat | G lng
  *   H hotelName | I hotelUrl | J hotelCost | K hotelNotes | L hotelBooked | M hotelAddress
+ *   N completeness
+ *   O debriefDrive | P debriefSightseeing | Q debriefFood | R debriefVibes
+ *   S debriefTiredness | T debriefNotes
  *
  * "Stops" tab (header row expected):
  *   A id | B dayId | C orderIndex | D name | E address | F lat | G lng
@@ -24,6 +27,7 @@ const DAYS_HEADER = [
   'id', 'date', 'dayOfWeek', 'city', 'state', 'lat', 'lng',
   'hotelName', 'hotelUrl', 'hotelCost', 'hotelNotes', 'hotelBooked', 'hotelAddress',
   'completeness',
+  'debriefDrive', 'debriefSightseeing', 'debriefFood', 'debriefVibes', 'debriefTiredness', 'debriefNotes',
 ];
 
 const STOPS_HEADER = [
@@ -84,7 +88,12 @@ function asBool(v: unknown): boolean {
 const VALID_COMPLETENESS = new Set(['UNSET', 'PACKED', 'BUSY', 'MODERATE', 'OPEN']);
 
 function dayFromRow(row: string[]): Day | null {
-  const [id, date, dayOfWeek, city, state, lat, lng, hotelName, hotelUrl, hotelCost, hotelNotes, hotelBooked, hotelAddress, completenessRaw] = row;
+  const [
+    id, date, dayOfWeek, city, state, lat, lng,
+    hotelName, hotelUrl, hotelCost, hotelNotes, hotelBooked, hotelAddress,
+    completenessRaw,
+    debriefDrive, debriefSightseeing, debriefFood, debriefVibes, debriefTiredness, debriefNotes,
+  ] = row;
   if (!id) return null;
   const latN = asNumberOrNull(lat);
   const lngN = asNumberOrNull(lng);
@@ -100,6 +109,18 @@ function dayFromRow(row: string[]): Day | null {
   const completeness = VALID_COMPLETENESS.has(asString(completenessRaw))
     ? (asString(completenessRaw) as CompletenessLevel)
     : 'UNSET';
+
+  const dd = asNumberOrNull(debriefDrive);
+  const ds = asNumberOrNull(debriefSightseeing);
+  const df = asNumberOrNull(debriefFood);
+  const dv = asNumberOrNull(debriefVibes);
+  const dt = asNumberOrNull(debriefTiredness);
+  const dn = asString(debriefNotes);
+  const hasAnyDebrief = dd !== null || ds !== null || df !== null || dv !== null || dt !== null || dn !== '';
+  const debrief: DayDebrief | undefined = hasAnyDebrief
+    ? { drive: dd ?? 0, sightseeing: ds ?? 0, food: df ?? 0, vibes: dv ?? 0, tiredness: dt, notes: dn }
+    : undefined;
+
   return {
     id: asString(id),
     date: asString(date),
@@ -110,16 +131,24 @@ function dayFromRow(row: string[]): Day | null {
     hotel,
     stops: [],
     completeness,
+    debrief,
   };
 }
 
 function dayToRow(d: Day): (string | number)[] {
+  const db = d.debrief;
   return [
     d.id, d.date, d.dayOfWeek, d.city, d.state,
     d.location.lat, d.location.lng,
     d.hotel.name, d.hotel.url, d.hotel.cost, d.hotel.notes,
     d.hotel.booked ? 'TRUE' : 'FALSE', d.hotel.address,
     d.completeness ?? 'UNSET',
+    db ? db.drive : 0,
+    db ? db.sightseeing : 0,
+    db ? db.food : 0,
+    db ? db.vibes : 0,
+    db?.tiredness ?? '',
+    db?.notes ?? '',
   ];
 }
 
@@ -164,7 +193,7 @@ export async function readTrip(): Promise<Day[]> {
 
   const resp = await sheets.spreadsheets.values.batchGet({
     spreadsheetId,
-    ranges: [`${DAYS_TAB}!A2:N`, `${STOPS_TAB}!A2:M`],
+    ranges: [`${DAYS_TAB}!A2:T`, `${STOPS_TAB}!A2:M`],
   });
 
   const [daysRange, stopsRange] = resp.data.valueRanges ?? [];
@@ -208,7 +237,7 @@ export async function writeTrip(days: Day[]): Promise<void> {
   // Clear then write, so deleted rows actually disappear.
   await sheets.spreadsheets.values.batchClear({
     spreadsheetId,
-    requestBody: { ranges: [`${DAYS_TAB}!A2:N`, `${STOPS_TAB}!A2:Z`] },
+    requestBody: { ranges: [`${DAYS_TAB}!A2:T`, `${STOPS_TAB}!A2:Z`] },
   });
 
   await sheets.spreadsheets.values.batchUpdate({
@@ -315,7 +344,7 @@ export async function ensureInitialized(initialDays: Day[]): Promise<void> {
   // Check whether Days is empty (no header or no data). If so, seed.
   const resp = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${DAYS_TAB}!A1:N`,
+    range: `${DAYS_TAB}!A1:T`,
   });
   const rows = (resp.data.values ?? []) as string[][];
   const hasHeader = rows[0]?.[0] === 'id';

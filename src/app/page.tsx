@@ -9,11 +9,13 @@ import { AddStopModal } from '@/components/AddStopModal';
 import { HotelModal } from '@/components/HotelModal';
 import { PinGate } from '@/components/PinGate';
 import { ListsModal } from '@/components/ListsModal';
+import { DebriefModal } from '@/components/DebriefModal';
 import { loadTripFromServer, startTripSync } from '@/lib/tripSync';
 import { loadListsFromServer, startListsSync } from '@/lib/listsSync';
 
 type StopModal = { dayId: string; editing: Stop | null };
 type HotelModalState = { dayId: string };
+type DebriefModalState = { dayId: string };
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? '';
 const TRIP_YEAR = 2026;
@@ -42,6 +44,7 @@ function TripApp({ isGuest }: { isGuest: boolean }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [stopModal, setStopModal] = useState<StopModal | null>(null);
   const [hotelModal, setHotelModal] = useState<HotelModalState | null>(null);
+  const [debriefModal, setDebriefModal] = useState<DebriefModalState | null>(null);
   const [listsOpen, setListsOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -53,6 +56,7 @@ function TripApp({ isGuest }: { isGuest: boolean }) {
   const updateStop = useTripStore((s) => s.updateStop);
   const updateHotel = useTripStore((s) => s.updateHotel);
   const updateDayCompleteness = useTripStore((s) => s.updateDayCompleteness);
+  const updateDayDebrief = useTripStore((s) => s.updateDayDebrief);
 
   useEffect(() => {
     startTripSync();
@@ -107,6 +111,7 @@ function TripApp({ isGuest }: { isGuest: boolean }) {
           onEditStop={isGuest ? () => {} : (dayId, stop) => setStopModal({ dayId, editing: stop })}
           onEditHotel={isGuest ? () => {} : (dayId) => setHotelModal({ dayId })}
           onOpenLists={() => setListsOpen(true)}
+          onDebrief={(dayId) => setDebriefModal({ dayId })}
           isGuest={isGuest}
         />
 
@@ -150,6 +155,20 @@ function TripApp({ isGuest }: { isGuest: boolean }) {
           onClose={() => setHotelModal(null)}
         />
       )}
+
+      {debriefModal && (() => {
+        const debriefDay = days.find((d) => d.id === debriefModal.dayId);
+        const debriefIdx = debriefDay ? days.indexOf(debriefDay) : -1;
+        return debriefDay ? (
+          <DebriefModal
+            dayLabel={`Day ${debriefIdx + 1}: ${debriefDay.dayOfWeek}, ${debriefDay.date} · ${debriefDay.city}, ${debriefDay.state}`}
+            initialDebrief={debriefDay.debrief}
+            isGuest={isGuest}
+            onSave={(debrief) => updateDayDebrief(debriefModal.dayId, debrief)}
+            onClose={() => setDebriefModal(null)}
+          />
+        ) : null;
+      })()}
     </APIProvider>
   );
 }

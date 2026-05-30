@@ -12,10 +12,22 @@ interface Props {
   onEditStop: (dayId: string, stop: Stop) => void;
   onEditHotel: (dayId: string) => void;
   onOpenLists: () => void;
+  onDebrief: (dayId: string) => void;
   isGuest?: boolean;
 }
 
-export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, onEditHotel, onOpenLists, isGuest }: Props) {
+const TRIP_YEAR = 2026;
+
+function canDebriefDay(dateStr: string): boolean {
+  const [m, d] = dateStr.split('/').map(Number);
+  if (!m || !d) return false;
+  const dayDate = new Date(Date.UTC(TRIP_YEAR, m - 1, d));
+  const now = new Date();
+  const todayUTC = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  return dayDate <= todayUTC;
+}
+
+export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, onEditHotel, onOpenLists, onDebrief, isGuest }: Props) {
   const days = useTripStore((s) => s.days);
   const selectedDayId = useTripStore((s) => s.selectedDayId);
   const routes = useTripStore((s) => s.routes);
@@ -148,12 +160,14 @@ export function Sidebar({ collapsed, onToggleCollapsed, onAddStop, onEditStop, o
             isSelected={selectedDayId === day.id}
             route={routes[day.id]}
             isGuest={isGuest}
+            canDebrief={canDebriefDay(day.date)}
             onSelect={() => setSelectedDay(day.id === selectedDayId ? null : day.id)}
             onAddStop={() => onAddStop(day.id)}
             onEditStop={(stop) => onEditStop(day.id, stop)}
             onRemoveStop={(stopId) => removeStop(day.id, stopId)}
             onReorderStop={(from, to) => reorderStop(day.id, from, to)}
             onEditHotel={() => onEditHotel(day.id)}
+            onDebrief={() => onDebrief(day.id)}
           />
         ))}
       </div>
