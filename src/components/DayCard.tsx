@@ -1,7 +1,7 @@
 'use client';
 import { Fragment, useState } from 'react';
-import { BedDouble, Car, Fuel, Clock, Banknote, Pencil, Trash2, MapPin, Route, ExternalLink, ChevronUp, ChevronDown, TriangleAlert } from 'lucide-react';
-import { Day, RouteInfo, Stop } from '@/types/trip';
+import { BedDouble, Car, Fuel, Clock, Banknote, Pencil, Trash2, MapPin, Route, ExternalLink, ChevronUp, ChevronDown, TriangleAlert, Star, NotebookPen } from 'lucide-react';
+import { Day, RouteInfo, Stop, isFullyDebriefed } from '@/types/trip';
 import { getDayColor } from '@/utils/colors';
 import { COMPLETENESS } from '@/utils/completeness';
 import { formatDuration } from '@/utils/routesApi';
@@ -14,12 +14,14 @@ interface Props {
   isSelected: boolean;
   route?: RouteInfo;
   isGuest?: boolean;
+  canDebrief?: boolean;
   onSelect: () => void;
   onAddStop: () => void;
   onEditStop: (stop: Stop) => void;
   onRemoveStop: (stopId: string) => void;
   onReorderStop: (fromIndex: number, toIndex: number) => void;
   onEditHotel: () => void;
+  onDebrief?: () => void;
 }
 
 const GAS_PRICE_CA = 5.50;
@@ -47,14 +49,31 @@ function buildDayMapsUrl(
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
+function StarDisplay({ value }: { value: number }) {
+  return (
+    <span className="inline-flex gap-px">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star
+          key={i}
+          size={10}
+          fill={i <= value ? '#f59e0b' : 'none'}
+          stroke={i <= value ? '#f59e0b' : '#6b7280'}
+          strokeWidth={1.5}
+        />
+      ))}
+    </span>
+  );
+}
+
 export function DayCard({
-  day, index, originCity, originLocation, isSelected, route, isGuest,
-  onSelect, onAddStop, onEditStop, onRemoveStop, onReorderStop, onEditHotel,
+  day, index, originCity, originLocation, isSelected, route, isGuest, canDebrief,
+  onSelect, onAddStop, onEditStop, onRemoveStop, onReorderStop, onEditHotel, onDebrief,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [hovered, setHovered] = useState(false);
   const color = getDayColor(index);
-  const completenessColor = (day.completeness && day.completeness !== 'UNSET')
+  const debriefed = isFullyDebriefed(day);
+  const completenessColor = !debriefed && (day.completeness && day.completeness !== 'UNSET')
     ? COMPLETENESS[day.completeness].color
     : null;
   const hasHotel = !!day.hotel.name;
@@ -84,7 +103,9 @@ export function DayCard({
   }
   const hasLegs = !!(route?.legs && route.legs.length === li + 1 && li >= 1);
 
-  const outerStyle: React.CSSProperties = completenessColor
+  const outerStyle: React.CSSProperties = debriefed
+    ? { borderColor: '#4b5563', opacity: 0.65 }
+    : completenessColor
     ? {
         borderColor: completenessColor,
         borderWidth: '3px',
@@ -99,12 +120,23 @@ export function DayCard({
     : {};
 
   const outerClassName = `rounded-xl border transition-all duration-200 ${
-    completenessColor
+    debriefed
+      ? 'hover:opacity-90'
+      : completenessColor
       ? ''
       : isSelected
       ? 'border-opacity-80 shadow-lg'
       : 'border-stone-200 dark:border-gray-700 hover:border-stone-400 dark:hover:border-gray-500'
   }`;
+
+  const handleHeaderClick = () => {
+    if (debriefed) {
+      onDebrief?.();
+    } else {
+      onSelect();
+      setExpanded(true);
+    }
+  };
 
   return (
     <div
@@ -113,15 +145,15 @@ export function DayCard({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="p-3 flex items-start gap-3 cursor-pointer select-none" onClick={() => { onSelect(); setExpanded(true); }}>
+      <div className="p-3 flex items-start gap-3 cursor-pointer select-none" onClick={handleHeaderClick}>
         <div className="flex-shrink-0 flex flex-col items-center gap-0.5">
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-gray-900"
-            style={{ backgroundColor: color }}
+            style={{ backgroundColor: debriefed ? '#6b7280' : color }}
           >
             {index + 1}
           </div>
-          {(!day.completeness || day.completeness === 'UNSET') && (
+          {!debriefed && (!day.completeness || day.completeness === 'UNSET') && (
             <TriangleAlert size={12} className="text-amber-400" />
           )}
         </div>
@@ -148,6 +180,17 @@ export function DayCard({
             )}
           </div>
           <div className="text-xs text-stone-500 dark:text-gray-400">{day.dayOfWeek} &middot; {day.date}</div>
+          {debriefed && day.debrief && (
+            <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5 text-xs text-stone-500 dark:text-gray-400">
+              <span className="flex items-center gap-0.5">Drive <StarDisplay value={day.debrief.drive} /></span>
+              <span className="flex items-center gap-0.5">Sights <StarDisplay value={day.debrief.sightseeing} /></span>
+              <span className="flex items-center gap-0.5">Food <StarDisplay value={day.debrief.food} /></span>
+              <span className="flex items-center gap-0.5">Vibes <StarDisplay value={day.debrief.vibes} /></span>
+              {day.debrief.tiredness != null && (
+                <span>Tired {day.debrief.tiredness}/10</span>
+              )}
+            </div>
+          )}
           {route && (
             <div className="flex gap-3 mt-0.5 text-xs text-stone-500 dark:text-gray-400">
               <span><Car size={12} className="inline-block" /> {route.durationText}</span>
@@ -344,6 +387,21 @@ export function DayCard({
                 ) : (
                   <><BedDouble size={12} className="inline-block mr-1" />Add Hotel</>
                 )}
+              </button>
+            </div>
+          )}
+          {!isGuest && canDebrief && (
+            <div className="pt-1">
+              <button
+                onClick={onDebrief}
+                className={`w-full py-1.5 text-xs font-medium border rounded-lg transition-colors flex items-center justify-center gap-1 ${
+                  debriefed
+                    ? 'bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border-emerald-600/30'
+                    : 'bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 border-violet-600/30'
+                }`}
+              >
+                <NotebookPen size={12} />
+                {debriefed ? 'Edit Debrief' : 'Debrief This Day'}
               </button>
             </div>
           )}

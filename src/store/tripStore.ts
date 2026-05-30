@@ -1,6 +1,6 @@
 'use client';
 import { create } from 'zustand';
-import { Day, Hotel, RouteInfo, Stop } from '@/types/trip';
+import { Day, DayDebrief, Hotel, RouteInfo, Stop } from '@/types/trip';
 import type { CompletenessLevel } from '@/utils/completeness';
 
 interface TripStore {
@@ -19,6 +19,7 @@ interface TripStore {
   reorderStop: (dayId: string, fromIndex: number, toIndex: number) => void;
   updateHotel: (dayId: string, hotel: Hotel) => void;
   updateDayCompleteness: (dayId: string, level: CompletenessLevel) => void;
+  updateDayDebrief: (dayId: string, debrief: DayDebrief) => void;
   setRoute: (dayId: string, info: RouteInfo) => void;
 }
 
@@ -80,6 +81,11 @@ export const useTripStore = create<TripStore>()((set) => ({
   updateDayCompleteness: (dayId, level) =>
     set((state) => ({
       days: state.days.map((d) => (d.id === dayId ? { ...d, completeness: level } : d)),
+    })),
+
+  updateDayDebrief: (dayId, debrief) =>
+    set((state) => ({
+      days: state.days.map((d) => (d.id === dayId ? { ...d, debrief } : d)),
     })),
 
   setRoute: (dayId, info) =>
