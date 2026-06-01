@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { X, Star } from 'lucide-react';
+import { X } from 'lucide-react';
 import type { DayDebrief } from '@/types/trip';
+import { StarSvg } from './StarSvg';
 
 interface Props {
   dayLabel: string;
@@ -11,13 +12,16 @@ interface Props {
   onClose: () => void;
 }
 
-const EMPTY_DEBRIEF: DayDebrief = { drive: 0, sightseeing: 0, food: 0, vibes: 0, tiredness: null, notes: '' };
+const EMPTY_DEBRIEF: DayDebrief = { drive: 0, sightseeing: 0, food: 0, vibes: 0, lodging: 0, tiredness: null, notes: '' };
 
-const STAR_FIELDS: { key: keyof Pick<DayDebrief, 'drive' | 'sightseeing' | 'food' | 'vibes'>; label: string }[] = [
+type StarField = keyof Pick<DayDebrief, 'drive' | 'sightseeing' | 'food' | 'vibes' | 'lodging'>;
+
+const STAR_FIELDS: { key: StarField; label: string }[] = [
   { key: 'drive', label: 'Drive' },
   { key: 'sightseeing', label: 'Sightseeing' },
   { key: 'food', label: 'Food' },
   { key: 'vibes', label: 'Vibes' },
+  { key: 'lodging', label: 'Lodging' },
 ];
 
 function StarRating({
@@ -32,33 +36,44 @@ function StarRating({
   onChange: (v: number) => void;
 }) {
   const [hover, setHover] = useState(0);
-  const active = hover || value;
+  const active = hover !== 0 ? hover : value;
+
+  const resolveHalf = (e: React.MouseEvent<HTMLButtonElement>, i: number): number => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return e.clientX - rect.left < rect.width / 2 ? i - 0.5 : i;
+  };
+
   return (
     <div className="flex items-center gap-3">
       <span className="text-sm text-stone-300 w-28 flex-shrink-0">{label}</span>
-      <div className="flex gap-0.5">
+      <div
+        className="flex gap-0.5"
+        onMouseLeave={() => !readOnly && setHover(0)}
+      >
         {[1, 2, 3, 4, 5].map((i) => (
           <button
             key={i}
             type="button"
             disabled={readOnly}
-            onMouseEnter={() => !readOnly && setHover(i)}
-            onMouseLeave={() => !readOnly && setHover(0)}
-            onClick={() => !readOnly && onChange(value === i ? 0 : i)}
-            className={`p-0.5 transition-colors ${readOnly ? 'cursor-default' : 'hover:scale-110'}`}
+            onMouseMove={(e) => !readOnly && setHover(resolveHalf(e, i))}
+            onMouseEnter={(e) => !readOnly && setHover(resolveHalf(e, i))}
+            onClick={(e) => {
+              if (readOnly) return;
+              const newVal = resolveHalf(e, i);
+              onChange(value === newVal ? 0 : newVal);
+            }}
+            className={`p-0.5 transition-transform ${readOnly ? 'cursor-default' : 'hover:scale-110'}`}
             aria-label={readOnly ? undefined : `Rate ${i}`}
           >
-            <Star
-              size={22}
-              fill={active >= i ? '#f59e0b' : 'none'}
-              stroke={active >= i ? '#f59e0b' : '#6b7280'}
-              strokeWidth={1.5}
+            <StarSvg
+              size={24}
+              fillMode={active >= i ? 'full' : active >= i - 0.5 ? 'half' : 'empty'}
             />
           </button>
         ))}
       </div>
       {value > 0 && (
-        <span className="text-xs text-stone-500 w-8">{value}/5</span>
+        <span className="text-xs text-stone-500 w-10">{value}/5</span>
       )}
     </div>
   );
@@ -74,12 +89,13 @@ export function DebriefModal({ dayLabel, initialDebrief, isGuest, onSave, onClos
     onClose();
   };
 
-  const setRating = (field: keyof Pick<DayDebrief, 'drive' | 'sightseeing' | 'food' | 'vibes'>, value: number) => {
+  const setRating = (field: StarField, value: number) => {
     setForm((f) => ({ ...f, [field]: value }));
   };
 
   const isComplete =
-    form.drive >= 1 && form.sightseeing >= 1 && form.food >= 1 && form.vibes >= 1 && tirednessActive;
+    form.drive >= 0.5 && form.sightseeing >= 0.5 && form.food >= 0.5 &&
+    form.vibes >= 0.5 && form.lodging >= 0.5 && tirednessActive;
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={onClose}>

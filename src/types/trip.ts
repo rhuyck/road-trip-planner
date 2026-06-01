@@ -30,18 +30,27 @@ export interface Stop {
 }
 
 export interface DayDebrief {
-  drive: number;       // 0 = not rated, 1–5
-  sightseeing: number; // 0 = not rated, 1–5
-  food: number;        // 0 = not rated, 1–5
-  vibes: number;       // 0 = not rated, 1–5
+  drive: number;       // 0 = not rated, 0.5–5
+  sightseeing: number; // 0 = not rated, 0.5–5
+  food: number;        // 0 = not rated, 0.5–5
+  vibes: number;       // 0 = not rated, 0.5–5
+  lodging: number;     // 0 = not rated, 0.5–5
   tiredness: number | null; // null = not rated, 0–10
   notes: string;
 }
 
 export function isFullyDebriefed(day: Day): boolean {
   if (!day.debrief) return false;
-  const { drive, sightseeing, food, vibes, tiredness } = day.debrief;
-  return drive >= 1 && sightseeing >= 1 && food >= 1 && vibes >= 1 && tiredness !== null;
+  const { drive, sightseeing, food, vibes, lodging, tiredness } = day.debrief;
+  return drive >= 0.5 && sightseeing >= 0.5 && food >= 0.5 && vibes >= 0.5 && lodging >= 0.5 && tiredness !== null;
+}
+
+export function debriefAverage(debrief: DayDebrief): number {
+  const fields = [debrief.drive, debrief.sightseeing, debrief.food, debrief.vibes, debrief.lodging];
+  const rated = fields.filter((v) => v > 0);
+  if (rated.length === 0) return 0;
+  const sum = rated.reduce((a, b) => a + b, 0);
+  return Math.round((sum / rated.length) * 2) / 2;
 }
 
 export interface Day {
