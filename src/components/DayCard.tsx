@@ -1,7 +1,8 @@
 'use client';
 import { Fragment, useState } from 'react';
-import { BedDouble, Car, Fuel, Clock, Banknote, Pencil, Trash2, MapPin, Route, ExternalLink, ChevronUp, ChevronDown, TriangleAlert, Star, NotebookPen } from 'lucide-react';
-import { Day, RouteInfo, Stop, isFullyDebriefed } from '@/types/trip';
+import { BedDouble, Car, Fuel, Clock, Banknote, Pencil, Trash2, MapPin, Route, ExternalLink, ChevronUp, ChevronDown, TriangleAlert, NotebookPen } from 'lucide-react';
+import { Day, RouteInfo, Stop, isFullyDebriefed, debriefAverage } from '@/types/trip';
+import { StarSvg, StarRow } from './StarSvg';
 import { getDayColor } from '@/utils/colors';
 import { COMPLETENESS } from '@/utils/completeness';
 import { formatDuration } from '@/utils/routesApi';
@@ -49,22 +50,6 @@ function buildDayMapsUrl(
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
-function StarDisplay({ value }: { value: number }) {
-  return (
-    <span className="inline-flex gap-px">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Star
-          key={i}
-          size={10}
-          fill={i <= value ? '#f59e0b' : 'none'}
-          stroke={i <= value ? '#f59e0b' : '#6b7280'}
-          strokeWidth={1.5}
-        />
-      ))}
-    </span>
-  );
-}
-
 export function DayCard({
   day, index, originCity, originLocation, isSelected, route, isGuest, canDebrief,
   onSelect, onAddStop, onEditStop, onRemoveStop, onReorderStop, onEditHotel, onDebrief,
@@ -73,6 +58,7 @@ export function DayCard({
   const [hovered, setHovered] = useState(false);
   const color = getDayColor(index);
   const debriefed = isFullyDebriefed(day);
+  const avg = debriefed && day.debrief ? debriefAverage(day.debrief) : 0;
   const completenessColor = !debriefed && (day.completeness && day.completeness !== 'UNSET')
     ? COMPLETENESS[day.completeness].color
     : null;
@@ -180,15 +166,11 @@ export function DayCard({
             )}
           </div>
           <div className="text-xs text-stone-500 dark:text-gray-400">{day.dayOfWeek} &middot; {day.date}</div>
-          {debriefed && day.debrief && (
-            <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5 text-xs text-stone-500 dark:text-gray-400">
-              <span className="flex items-center gap-0.5">Drive <StarDisplay value={day.debrief.drive} /></span>
-              <span className="flex items-center gap-0.5">Sights <StarDisplay value={day.debrief.sightseeing} /></span>
-              <span className="flex items-center gap-0.5">Food <StarDisplay value={day.debrief.food} /></span>
-              <span className="flex items-center gap-0.5">Vibes <StarDisplay value={day.debrief.vibes} /></span>
-              {day.debrief.tiredness != null && (
-                <span>Tired {day.debrief.tiredness}/10</span>
-              )}
+          {debriefed && avg > 0 && (
+            <div className="flex items-center gap-1.5 mt-1">
+              <StarRow value={avg} size={13} />
+              <span className="text-sm font-bold text-amber-400">{avg.toFixed(1)}</span>
+              <span className="text-xs text-stone-500 dark:text-gray-500">avg</span>
             </div>
           )}
           {route && (
@@ -245,6 +227,31 @@ export function DayCard({
 
       {expanded && (
         <div className="px-3 pb-3 space-y-2 border-t border-stone-200 dark:border-gray-700 pt-2">
+          {debriefed && day.debrief && (
+            <div className="rounded-lg bg-amber-500/5 border border-amber-500/20 p-2.5 space-y-1.5">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-stone-500 dark:text-gray-400">
+                {([
+                  ['Drive', day.debrief.drive],
+                  ['Sightseeing', day.debrief.sightseeing],
+                  ['Food', day.debrief.food],
+                  ['Vibes', day.debrief.vibes],
+                  ['Lodging', day.debrief.lodging],
+                ] as [string, number][]).map(([label, val]) => (
+                  <span key={label} className="flex items-center gap-1.5">
+                    <span className="w-16 flex-shrink-0">{label}</span>
+                    <StarRow value={val} size={9} />
+                    {val > 0 && <span className="text-amber-500/80">{val}</span>}
+                  </span>
+                ))}
+                {day.debrief.tiredness != null && (
+                  <span>Tired&nbsp;<span className="text-stone-400 dark:text-gray-300">{day.debrief.tiredness}/10</span></span>
+                )}
+              </div>
+              {day.debrief.notes && (
+                <p className="text-xs text-stone-400 dark:text-gray-500 italic leading-relaxed">{day.debrief.notes}</p>
+              )}
+            </div>
+          )}
           {day.stops.length === 0 && (
             <p className="text-xs text-stone-400 dark:text-gray-500 italic">No stops yet.</p>
           )}
